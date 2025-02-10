@@ -1,3 +1,60 @@
+// ✅ Start a New Election with Verification
+window.startElection = async function () {
+    const electionName = document.getElementById("electionName").value.trim();
+    const roundNumber = parseInt(document.getElementById("roundNumber").value.trim());
+    if (!electionName) {
+        alert("Please enter an election name.");
+        return;
+    }
+
+    try {
+        const existingElection = await getActiveElection();
+        if (existingElection) {
+            await stopActiveElection();
+        }
+
+        const newElectionID = `${electionName} - Round ${roundNumber}`;
+        
+        // Store the election
+        await setDoc(doc(db, "elections", newElectionID), {
+            electionID: newElectionID,
+            round: roundNumber,
+            active: true,
+            startTime: new Date().toISOString()
+        });
+
+        // Verify the update
+        console.log("Verifying election update in Firebase...");
+        const verificationDoc = await getDoc(doc(db, "elections", newElectionID));
+        
+        if (verificationDoc.exists()) {
+            const verifiedData = verificationDoc.data();
+            console.log("Verification Results:");
+            console.log("Expected Election ID:", newElectionID);
+            console.log("Stored Election ID:", verifiedData.electionID);
+            console.log("Active Status:", verifiedData.active);
+            console.log("Round Number:", verifiedData.round);
+            
+            if (verifiedData.electionID === newElectionID && 
+                verifiedData.active === true && 
+                verifiedData.round === roundNumber) {
+                console.log("✅ Election successfully verified in Firebase!");
+                alert(`New Election Started and Verified: ${newElectionID}`);
+            } else {
+                console.error("❌ Election verification failed - data mismatch!");
+                alert("Warning: Election started but verification showed inconsistent data.");
+            }
+        } else {
+            console.error("❌ Election verification failed - document not found!");
+            alert("Error: Election creation could not be verified!");
+        }
+
+        loadElectionHistory();
+    } catch (error) {
+        console.error("Error starting/verifying election:", error);
+        alert("Failed to start election: " + error.message);
+    }
+};
 // admin.js - Updated for Election Management System
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
