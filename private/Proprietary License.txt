@@ -1,0 +1,43 @@
+Proprietary License
+You’re viewing user-generated content that may be unverified or unsafe.
+ChatGPT
+Edit with ChatGPT
+
+PROPRIETARY LICENSE AGREEMENT
+
+This Proprietary License Agreement ("Agreement") governs the use, reproduction, and distribution of specific proprietary components of the GOPVotingApp ("Software"). These proprietary components are separate from the MIT-licensed open-source core and are subject to the following terms and conditions:
+1. LICENSE GRANT
+
+The authors of the GOPVotingApp ("Licensor") grant the licensee ("User") a limited, non-exclusive, non-transferable, and revocable license to use the proprietary components of the Software strictly for authorized purposes as defined by the Licensor.
+2. RESTRICTIONS
+
+The User shall not:
+
+    Modify, distribute, sublicense, or create derivative works based on the proprietary components.
+
+    Reverse engineer, decompile, or attempt to extract the source code of proprietary modules.
+
+    Use the proprietary components for commercial purposes without express written permission from the Licensor.
+
+    Transfer, rent, lease, or grant rights to any third party without explicit authorization.
+
+3. OWNERSHIP
+
+All proprietary components remain the exclusive property of the Licensor. The MIT-licensed portions of the GOPVotingApp remain freely available under the MIT License.
+4. SUPPORT & MAINTENANCE
+
+The Licensor may offer paid support, updates, and maintenance services for proprietary features at its sole discretion. No warranty or guarantee of availability is provided unless otherwise agreed upon in a separate service agreement.
+5. TERMINATION
+
+This license is effective until terminated. The Licensor reserves the right to revoke this license at any time if the User violates the terms outlined herein.
+6. DISCLAIMER OF WARRANTIES & LIABILITY
+
+THE PROPRIETARY COMPONENTS OF THE SOFTWARE ARE PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED. LICENSOR SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE OR INABILITY TO USE THE SOFTWARE.
+7. GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which the Licensor operates.
+8. CONTACT INFORMATION
+
+For inquiries regarding commercial licensing, support, or permissions, please contact: [Insert Contact Information]
+
+

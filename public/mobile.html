@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Results (Mobile)</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, getDocs, where, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ✅ Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBK3jFdXbfHqV43kn3hzE1TA9-zt3jt180",
+            authDomain: "republican-party-voting-system.firebaseapp.com",
+            projectId: "republican-party-voting-system",
+            storageBucket: "republican-party-voting-system.appspot.com",
+            messagingSenderId: "834541676093",
+            appId: "1:834541676093:web:bf0eafa5e0f9ba68e0ec54",
+            measurementId: "G-THQJN6HYQD"
+        };
+
+        // ✅ Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const electionRef = doc(db, "settings", "currentElection");
+        const resultsToggleRef = doc(db, "settings", "resultsHidden");  // 🔹 New Firestore Doc for Toggle State
+
+        let selectedElectionID = null;
+
+        function listenForElectionIDChanges() {
+            onSnapshot(electionRef, async (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    selectedElectionID = docSnapshot.data().electionID;
+                    document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
+                    
+                    await fetchVotingResults(selectedElectionID);
+                    await fetchCandidateStats(selectedElectionID)
+					console.log(`Fetching candidateStats#1`);
+                    await fetchVoteStats(selectedElectionID);
+                }
+            });
+
+            // 🔹 Listen for Result Toggle Changes from Firestore
+            onSnapshot(resultsToggleRef, async (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const resultsHidden = docSnapshot.data().hidden;
+                    updateResultsVisibilityMessage(resultsHidden);
+                    await fetchVotingResults(selectedElectionID);
+                    //await fetchCandidateStats(selectedElectionID)
+					//console.log(`Fetching candidateStats#2`);
+                }
+            });
+        }
+
+        // ✅ Fetch Voting Results (Uses Grid & Toggle Visibility)
+        async function fetchVotingResults(electionID) {
+            console.log(`Fetching results for election ID: ${electionID}`);
+
+            const resultsContainer = document.getElementById("resultsContainer");
+            resultsContainer.innerHTML = ""; // ✅ Clear previous results
+
+            const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+            const toggleDoc = await getDoc(resultsToggleRef);
+            const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
+
+            if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
+                console.warn("No votes found.");
+                resultsContainer.innerHTML = "<p>No votes yet.</p>";
+                return;
+            }
+
+            votesSnapshot.docs.forEach((doc) => {
+                const vote = doc.data();
+                const candidateName = resultsHidden ? "Hidden" : vote.candidate;
+
+                const voteCard = document.createElement("div");
+                voteCard.classList.add("vote-card");
+                voteCard.textContent = `${vote.confirmationNumber} - ${candidateName}`;
+
+                resultsContainer.appendChild(voteCard);
+            });
+        }
+
+        // ✅ Fetch Candidate Statistics
+async function fetchCandidateStats(electionID) {
+    const candidateStatsTable = document.getElementById("candidateStatsTable");
+    const candidateStatsContainer = document.getElementById("candidateStatsContainer");
+
+    if (!candidateStatsTable || !candidateStatsContainer) {
+        console.error("Candidate stats table container is missing.");
+        return;
+    }
+
+    // Check resultsHidden from Firestore
+    const toggleDoc = await getDoc(resultsToggleRef);
+    const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
+
+    // Hide or show the candidate stats container
+    candidateStatsContainer.style.display = resultsHidden ? "none" : "block";
+
+    candidateStatsTable.innerHTML = "";
+
+    const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+
+    if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
+        candidateStatsTable.innerHTML = "<tr><td>No votes yet</td></tr>";
+        return;
+    }
+
+    const votes = votesSnapshot.docs.map(doc => doc.data());
+    const candidateCounts = {};
+    votes.forEach((vote) => {
+        candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+    });
+
+    for (const [candidate] of Object.entries(candidateCounts)) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : `<td>${candidateCounts[candidate]}</td><td>${((candidateCounts[candidate] / votes.length) * 100).toFixed(2)}%</td>`}`;
+        candidateStatsTable.appendChild(row);
+    }
+}
+
+
+        // ✅ Fetch Vote Statistics
+		async function fetchVoteStats(electionID) {
+			const totalVotersElem = document.getElementById("totalVoters");
+			const votesCastElem = document.getElementById("votesCast");
+			const remainingVotesElem = document.getElementById("remainingVotes");
+
+			if (!totalVotersElem || !votesCastElem || !remainingVotesElem) {
+				console.error("One or more vote stats elements are missing.");
+				return;
+			}
+
+			const votersSnapshot = await getDocs(collection(db, "voters"));
+			const totalVoters = votersSnapshot.size;
+
+			const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+			const votesCast = votesSnapshot.size;
+			const remainingVotes = totalVoters - votesCast;
+			const remainingPercentage = totalVoters > 0 ? ((remainingVotes / totalVoters) * 100).toFixed(2) : "0";
+
+			totalVotersElem.textContent = totalVoters;
+			votesCastElem.textContent = votesCast;
+			remainingVotesElem.textContent = `${remainingVotes} (${remainingPercentage}%)`;
+		}
+
+        // ✅ Update Visibility Message
+        function updateResultsVisibilityMessage(resultsHidden) {
+			const resultsMessage = document.getElementById("resultsVisibilityMessage");
+			resultsMessage.textContent = resultsHidden ? "Results hidden during live votes!" : "";
+
+			// Hide or show the candidate stats table
+			const candidateStatsTable = document.getElementById("candidateStatsContainer"); 
+			if (candidateStatsTable) {
+				candidateStatsTable.style.display = resultsHidden ? "none" : "block";
+			}
+		}
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Mobile page loaded. Listening for election updates.");
+            listenForElectionIDChanges();
+        });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #223A5E;
+            color: #ffffff;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        #resultsVisibilityMessage {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 15px;
+        }
+        #resultsContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            padding: 10px;
+            width: 100%;
+        }
+        .vote-card {
+            background-color: #d8dee9;
+            color: #223A5E;
+            padding: 12px;
+            text-align: center;
+            border: 2px solid #223A5E;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="electionIDHeader">Election ID: N/A</h1>
+
+<h2>Vote Statistics</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Total Voters</th>
+            <th>Votes Cast</th>
+            <th>Remaining Votes</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td id="totalVoters">0</td>
+            <td id="votesCast">0</td>
+            <td id="remainingVotes">0 (0.00%)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Candidate Stats</h2>
+<div id="resultsVisibilityMessage"></div>
+<div id="candidateStatsContainer">
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Candidate</th>
+                <th>Votes</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody id="candidateStatsTable"></tbody>
+    </table>
+</div>
+
+
+    <h2>Voting Results</h2>
+    <div id="resultsContainer"></div>
+</body>
+</html>

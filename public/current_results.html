@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting Results</title>
+  <script>
+        // Redirect to mobile version if the user is on a mobile device
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            window.location.href = "mresults.html";
+        }
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, getDocs, where, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBK3jFdXbfHqV43kn3hzE1TA9-zt3jt180",
+            authDomain: "republican-party-voting-system.firebaseapp.com",
+            projectId: "republican-party-voting-system",
+            storageBucket: "republican-party-voting-system.appspot.com",
+            messagingSenderId: "834541676093",
+            appId: "1:834541676093:web:bf0eafa5e0f9ba68e0ec54",
+            measurementId: "G-THQJN6HYQD"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+		//const db = getFirestore();
+		const electionRef = doc(db, "settings", "currentElection");
+
+        let selectedElectionID = localStorage.getItem("selectedElection");
+
+function listenForElectionIDChanges() {
+    onSnapshot(electionRef, async (docSnapshot) => {
+        if (docSnapshot.exists()) {
+            const selectedElectionID = docSnapshot.data().electionID;
+            console.log("Updated Election ID:", selectedElectionID);
+
+            document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
+            
+            // ✅ Ensure all functions are called when Election ID updates
+            await fetchVotingResults(selectedElectionID);
+            await fetchCandidateStats(selectedElectionID);
+            await fetchVoteStats(selectedElectionID);
+        }
+    });
+}
+
+// ✅ Fetch Voting Results (Updated for Dynamic Layout)
+async function fetchVotingResults(electionID) {
+    const resultsTable = document.getElementById("resultsTable");
+    resultsTable.innerHTML = "";
+
+    const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+    
+    if (votesSnapshot.empty) {
+        resultsTable.innerHTML = "<tr><td>No votes yet</td></tr>";
+        return;
+    }
+
+   let row = document.createElement("tr"); // Ensure row is always initialized
+    resultsTable.appendChild(row);
+
+    const columnCount = getColumnCount(); // Get dynamic column count
+
+    votesSnapshot.forEach((doc, index) => {
+        if (index % columnCount === 0) {
+            row = document.createElement("tr");
+            resultsTable.appendChild(row);
+        }
+        const vote = doc.data();
+        const cell = document.createElement("td");
+        cell.classList.add("result-cell");
+        cell.textContent = `${vote.confirmationNumber} - ${vote.candidate}`;
+        row.appendChild(cell);
+    });
+}
+
+// ✅ Function to Determine Column Count Based on Screen Size
+function getColumnCount() {
+    const containerWidth = document.getElementById("mainContainer").offsetWidth;
+    const cellWidth = 100; // Adjust this width for better fit
+    return Math.max(1, Math.floor(containerWidth / cellWidth));
+}
+
+// ✅ Adjust Layout Dynamically on Resize
+window.addEventListener("resize", () => fetchVotingResults(selectedElectionID));
+
+
+// ✅ Fetch Candidate Statistics
+async function fetchCandidateStats(electionID) {
+    const candidateStatsTable = document.getElementById("candidateStatsTable");
+    candidateStatsTable.innerHTML = "";
+
+    const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+    const votes = votesSnapshot.docs.map(doc => doc.data());
+    const candidateCounts = {};
+    
+    votes.forEach((vote) => {
+        candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+    });
+
+    const totalVotes = votes.length;
+    for (const [candidate, count] of Object.entries(candidateCounts)) {
+        const percentage = ((count / totalVotes) * 100).toFixed(2);
+        candidateStatsTable.innerHTML += `<tr><td>${candidate}</td><td>${count}</td><td>${percentage}%</td></tr>`;
+    }
+}
+
+// ✅ Fetch Vote Statistics
+async function fetchVoteStats(electionID) {
+    const votersSnapshot = await getDocs(collection(db, "voters"));
+    const totalVoters = votersSnapshot.size;
+
+    const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+    const votesCast = votesSnapshot.size;
+    const remainingVotes = totalVoters - votesCast;
+    const remainingPercentage = ((remainingVotes / totalVoters) * 100).toFixed(2);
+
+    document.getElementById("totalVoters").textContent = totalVoters;
+    document.getElementById("votesCast").textContent = votesCast;
+    document.getElementById("remainingVotes").textContent = `${remainingVotes} (${remainingPercentage}%)`;
+}
+
+// ✅ Ensure it runs on page load
+document.addEventListener("DOMContentLoaded", listenForElectionIDChanges);
+//***************************************************************************
+
+
+        //window.addEventListener("resize", fetchVotingResults);
+        //window.addEventListener("storage", handleElectionChange);
+        //document.addEventListener("DOMContentLoaded", handleElectionChange);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            overflow-x: hidden;
+        }
+        #leftContainer {
+            flex: 0 1 240px;
+          min-width: 220px;
+            padding: 20px;
+            border-right: 3px solid #223A5E;
+            background-color: #d8dee9;
+            color: #223A5E;
+            overflow: auto;
+        }
+        #mainContainer {
+            width: 100%;
+            padding: 0px;
+            text-align: center;
+            background-color: #223A5E;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+            border: 2px solid #ffffff;
+        }
+        th, td {
+            border: 2px solid #ffffff;
+            padding: 10px;
+            text-align: left;
+            word-wrap: break-word;
+            overflow: hidden;
+            background-color: #d8dee9;
+            color: #223A5E;
+        }
+        th {
+            background-color: #ffffff;
+            color: #223A5E;
+        }
+        .result-cell {
+            flex: 0 1 240px;
+            text-align: left;
+            background-color: #d8dee9;
+            color: #223A5E;
+            border: 4px solid #223A5E;
+            border-radius: 8px;
+            padding: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="leftContainer">
+        <h2>Vote Count Table</h2>
+        <table>
+            <tr><th>Total Voters</th><td id="totalVoters">0</td></tr>
+            <tr><th>Votes Cast</th><td id="votesCast">0</td></tr>
+            <tr><th>Remaining Votes</th><td id="remainingVotes">0 (0%)</td></tr>
+        </table>
+        <h2>Candidate Stats</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Votes</th>
+                    <th>%</th>
+                </tr>
+            </thead>
+            <tbody id="candidateStatsTable"></tbody>
+        </table>
+
+    </div>
+    <div id="mainContainer">
+        <h1 id="electionIDHeader">Election ID: N/A</h1>
+        <table>
+           <tbody id="resultsTable"></tbody>
+        </table>
+    </div>
+</body>
+</html>

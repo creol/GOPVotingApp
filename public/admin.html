@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - GOP Voting System</title>
+    <script type="module" src="admin.js"></script> <!-- ✅ Load admin.js as a module -->
+</head>
+<body>
+    <!-- ✅ Centered Admin Portal Title -->
+    <h1 style="text-align: center; margin-top: 20px;">GOP Voting Admin Portal</h1>
+
+    <!-- ✅ Admin Login/Logout -->
+    <h2>Admin Access</h2>
+    <p id="adminStatus">Not Logged In</p>
+    <button onclick="adminLogin()">Login with Google</button>
+    <button onclick="adminLogout()">Logout</button>
+
+    <!-- ✅ Election Status -->
+    <h2>Election Status</h2>
+    <div id="electionStatusContainer" style="text-align: center; margin-bottom: 20px;">
+        <img id="electionStatusIcon" src="" alt="Election Status" style="width: 100px;">
+    </div>
+
+    <!-- ✅ Candidate & Voter Uploads -->
+    <h2>Candidate & Voter Management</h2>
+    <label>Upload Candidates (CSV):</label>
+    <input type="file" id="uploadCandidates" accept=".csv" onchange="uploadCandidates(event)">
+    <label>Upload Voter IDs (CSV):</label>
+    <input type="file" id="voterIdUpload" accept=".csv" onchange="uploadVoterIDs(event)">
+
+    <!-- ✅ Election Management -->
+    <h2>Election Setup</h2>
+    <label for="electionName">Election Name:</label>
+    <input type="text" id="electionName" placeholder="Loading...">
+    <label>Round #:</label>
+    <input type="number" id="roundNumber" min="1" value="1">
+    
+    <button onclick="startElection()">Start Election</button>
+    <button onclick="stopActiveElection()">Stop Election</button>
+
+    <!-- ✅ Visibility Options (Results Toggle) -->
+    <h2>Manage Results Visibility</h2>
+    <label for="electionSelect">Select Election:</label>
+    <select id="electionSelect" onchange="updateElectionID()"></select>
+
+    <!-- ✅ Toggle Button with ID -->
+    <button id="toggleResultsButton" onclick="toggleResultsVisibility()" style="background-color: red; color: white; border: none; padding: 10px; font-size: 16px;">
+        <span id="toggleIcon">👁️‍🗨️</span> Results Hidden
+    </button>
+
+    <!-- ✅ Vote Stats Table (Missing Section) -->
+    <h2>Vote Stats</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Total Voters</th>
+                <th>Votes Cast</th>
+                <th>Remaining Votes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="totalVoters">0</td>
+                <td id="votesCast">0</td>
+                <td id="remainingVotes">0 (0.00%)</td>
+            </tr>
+        </tbody>
+    </table>
+<h2>Voting Results</h2>
+<button onclick="downloadResultsExcel()">Download Results as Excel</button>
+<button id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>Candidate</th>
+            <th>Votes</th>
+            <th>Percentage</th>
+        </tr>
+    </thead>
+    <tbody id="resultsTable"></tbody>
+</table>
+
+
+<h3>Toggle Results Visibility</h3>
+<select id="resultsVisibility" onchange="toggleResultsVisibility()">
+    <option value="show">Show Results</option>
+    <option value="hide">Hide Results</option>
+</select>
+
+    <!-- ✅ Election History Table -->
+    <h2>Election History</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Election Name</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+        </thead>
+        <tbody id="electionHistory"></tbody>
+    </table>
+
+    <!-- ✅ Printable Report -->
+    <button onclick="downloadResultsPDF()">Download Results as PDF</button>
+
+    <!-- ✅ Load External Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+    <script type="module">
+        import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ✅ Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBK3jFdXbfHqV43kn3hzE1TA9-zt3jt180",
+            authDomain: "republican-party-voting-system.firebaseapp.com",
+            projectId: "republican-party-voting-system",
+            storageBucket: "republican-party-voting-system.appspot.com",
+            messagingSenderId: "834541676093",
+            appId: "1:834541676093:web:bf0eafa5e0f9ba68e0ec54",
+            measurementId: "G-THQJN6HYQD"
+        };
+
+        // ✅ Prevent Duplicate Firebase Initialization
+        const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const resultsToggleRef = doc(db, "settings", "resultsHidden");
+
+        // ✅ Toggle Results Visibility
+window.toggleResultsVisibility = async function () {
+    const resultsVisibilityElement = document.getElementById("resultsVisibility");
+    
+    if (!resultsVisibilityElement) {
+        console.error("Error: 'resultsVisibility' select element not found.");
+        return;
+    }
+
+    const visibility = resultsVisibilityElement.value === "show";
+
+    try {
+        await setDoc(doc(db, "admin", "resultsVisibility"), { visible: visibility });
+
+        alert(`Results visibility set to: ${visibility ? "Show" : "Hide"}`);
+    } catch (error) {
+        console.error("Error updating results visibility:", error);
+    }
+};
+
+
+        //async function toggleResultsVisibility() {
+            //const toggleDoc = await getDoc(resultsToggleRef);
+            //const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
+
+            // ✅ Toggle the value in Firestore
+            //await setDoc(resultsToggleRef, { hidden: !resultsHidden });
+
+            // ✅ Update the button UI
+            //updateToggleButton(!resultsHidden);
+       // }
+
+        // ✅ Update Button UI Safely
+function updateToggleButton(resultsHidden) {
+    const button = document.getElementById("toggleResultsButton");
+    const icon = document.getElementById("toggleIcon");
+
+    if (!button || !icon) {
+        console.warn("Toggle button or icon is missing.");
+        return;
+    }
+
+    // Update button text and styles based on visibility
+    button.innerHTML = `<span id="toggleIcon">${resultsHidden ? "👀" : "👁️‍🗨️"}</span> ${resultsHidden ? "Show Results" : "Hide Results"}`;
+    button.style.backgroundColor = resultsHidden ? "green" : "red";
+}
+
+
+        // ✅ Load the Initial Toggle State *After* DOM is Ready
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("DOM fully loaded, initializing Firebase listeners.");
+
+            // ✅ Ensure Toggle Button Exists Before Running
+            if (document.getElementById("toggleResultsButton")) {
+                getDoc(resultsToggleRef).then((toggleDoc) => {
+                    if (toggleDoc.exists()) {
+                        updateToggleButton(toggleDoc.data().hidden);
+                    }
+                });
+
+                // ✅ Listen for Firestore Changes
+                onSnapshot(resultsToggleRef, (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        updateToggleButton(docSnapshot.data().hidden);
+                    }
+                });
+            }
+        });
+    </script>
+
+</html>
