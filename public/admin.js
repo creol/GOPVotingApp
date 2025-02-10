@@ -55,6 +55,77 @@ window.startElection = async function () {
         alert("Failed to start election: " + error.message);
     }
 };
+// Add this near the top of your script with other initialization code
+let electionListener = null;
+
+// Add this function to set up the election listener
+function setupElectionListener() {
+    // Remove any existing listener
+    if (electionListener) {
+        electionListener();
+    }
+
+    // Set up new listener for active elections
+    const activeElectionQuery = query(collection(db, "elections"), where("active", "==", true));
+    electionListener = onSnapshot(activeElectionQuery, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added" || change.type === "modified") {
+                const electionData = change.doc.data();
+                console.log("🔄 Election Update Detected:");
+                console.log("Election ID:", electionData.electionID);
+                console.log("Active Status:", electionData.active);
+                console.log("Round Number:", electionData.round);
+                console.log("Start Time:", electionData.startTime);
+            }
+        });
+    });
+}
+
+// Modify the startElection function to include real-time verification
+window.startElection = async function () {
+    const electionName = document.getElementById("electionName").value.trim();
+    const roundNumber = parseInt(document.getElementById("roundNumber").value.trim());
+    if (!electionName) {
+        alert("Please enter an election name.");
+        return;
+    }
+
+    try {
+        const existingElection = await getActiveElection();
+        if (existingElection) {
+            await stopActiveElection();
+        }
+
+        const newElectionID = `${electionName} - Round ${roundNumber}`;
+        
+        // Setup listener before creating the election
+        setupElectionListener();
+
+        // Store the election
+        await setDoc(doc(db, "elections", newElectionID), {
+            electionID: newElectionID,
+            round: roundNumber,
+            active: true,
+            startTime: new Date().toISOString()
+        });
+
+        console.log("⏳ Waiting for real-time election verification...");
+
+        // The listener will automatically log the verification details
+
+        alert(`New Election Started: ${newElectionID}`);
+        loadElectionHistory();
+    } catch (error) {
+        console.error("Error starting election:", error);
+        alert("Failed to start election.");
+    }
+};
+
+// Add this to your DOMContentLoaded event listener
+document.addEventListener("DOMContentLoaded", () => {
+    setupElectionListener();
+    // ... other initialization code ...
+});
 // admin.js - Updated for Election Management System
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
