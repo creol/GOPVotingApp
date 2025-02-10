@@ -126,6 +126,61 @@ document.addEventListener("DOMContentLoaded", () => {
     setupElectionListener();
     // ... other initialization code ...
 });
+// ✅ Update Election ID with Verification
+window.updateElectionID = async function () {
+    const electionSelect = document.getElementById("electionSelect");
+
+    if (!electionSelect) {
+        console.error("Error: 'electionSelect' element not found.");
+        return;
+    }
+
+    const selectedElectionID = electionSelect.value;
+
+    if (!selectedElectionID) {
+        console.warn("No election selected.");
+        return;
+    }
+
+    console.log(`Attempting to update election ID to: ${selectedElectionID}`);
+
+    try {
+        // Store the selected election ID in Firestore
+        await setDoc(doc(db, "admin", "currentElection"), { 
+            electionID: selectedElectionID,
+            lastUpdated: new Date().toISOString()
+        });
+
+        // Verify the update
+        console.log("Verifying election ID update in Firestore...");
+        const verificationDoc = await getDoc(doc(db, "admin", "currentElection"));
+        
+        if (verificationDoc.exists()) {
+            const verifiedData = verificationDoc.data();
+            console.log("Verification Results:");
+            console.log("Expected Election ID:", selectedElectionID);
+            console.log("Stored Election ID:", verifiedData.electionID);
+            console.log("Last Updated:", verifiedData.lastUpdated);
+            
+            if (verifiedData.electionID === selectedElectionID) {
+                console.log("✅ Election ID successfully verified in Firebase!");
+            } else {
+                console.error("❌ Election ID verification failed - data mismatch!");
+                alert("Warning: Election ID update showed inconsistent data.");
+            }
+        } else {
+            console.error("❌ Election ID verification failed - document not found!");
+            alert("Error: Election ID update could not be verified!");
+        }
+
+        // Refresh voting results
+        await loadVotingResults();
+        
+    } catch (error) {
+        console.error("Error updating election ID in Firestore:", error);
+        alert("Failed to update election ID: " + error.message);
+    }
+};
 // admin.js - Updated for Election Management System
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
