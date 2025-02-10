@@ -1,8 +1,4 @@
 Proprietary License
-You’re viewing user-generated content that may be unverified or unsafe.
-ChatGPT
-Edit with ChatGPT
-
 PROPRIETARY LICENSE AGREEMENT
 
 This Proprietary License Agreement ("Agreement") governs the use, reproduction, and distribution of specific proprietary components of the GOPVotingApp ("Software"). These proprietary components are separate from the MIT-licensed open-source core and are subject to the following terms and conditions:
@@ -38,6 +34,6 @@ THE PROPRIETARY COMPONENTS OF THE SOFTWARE ARE PROVIDED "AS IS" WITHOUT WARRANTI
 This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which the Licensor operates.
 8. CONTACT INFORMATION
 
-For inquiries regarding commercial licensing, support, or permissions, please contact: [Insert Contact Information]
-
-
+For inquiries regarding commercial licensing, support, or permissions, please contact: 
+Chris Null
+chris.null@gmail.com
