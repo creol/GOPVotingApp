@@ -33,28 +33,30 @@
 
         let selectedElectionID = null;
 
-        function listenForElectionIDChanges() {
-            onSnapshot(electionRef, async (docSnapshot) => {
-              if (docSnapshot.exists()) {
+function listenForElectionIDChanges() {
+        onSnapshot(electionRef, async (docSnapshot) => {
+            if (docSnapshot.exists()) {
             selectedElectionID = docSnapshot.data().electionID;
             document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
 
-            await listenForLiveVotingResults(selectedElectionID);
-            await fetchCandidateStats(selectedElectionID);
-            await fetchVoteStats(selectedElectionID);
+            listenForLiveVotingResults(selectedElectionID);
+            fetchCandidateStats(selectedElectionID);
+            fetchVoteStats(selectedElectionID);
              }
-          });
+            });
 
     onSnapshot(resultsToggleRef, async (docSnapshot) => {
         if (docSnapshot.exists()) {
             const resultsHidden = docSnapshot.data().hidden;
             updateResultsVisibilityMessage(resultsHidden);
-            await listenForLiveVotingResults(selectedElectionID);
-            await fetchCandidateStats(selectedElectionID);
-            await fetchVoteStats(selectedElectionID);
+            listenForLiveVotingResults(selectedElectionID);
+            fetchCandidateStats(selectedElectionID);
+            {
+fetchVoteStats(selectedElectionID);
         }
-    });
+    }});
 }
+
 
 
         // ✅ Fetch Voting Results
@@ -99,51 +101,95 @@ onSnapshot(votesQuery, (snapshot) => {
 				candidateStatsTable.style.display = resultsHidden ? "none" : "block";
 			}
 		}
-        // ✅ Fetch Candidate Statistics
-        async function fetchCandidateStats(electionID) {
-            const candidateStatsTable = document.getElementById("candidateStatsTable");
-            if (!candidateStatsTable) return;
+// ✅ Fetch Candidate Statistics
+function fetchVoteStats(electionID) {
+    // Listen to voters collection
+    onSnapshot(collection(db, "voters"), (votersSnapshot) => {
+        const totalVoters = votersSnapshot.size;
+        
+        // Listen to votes for specific election
+        onSnapshot(query(collection(db, "votes"), 
+            where("electionID", "==", electionID)), 
+            (votesSnapshot) => {
+                const votesCast = votesSnapshot.size;
+                const remainingVotes = totalVoters - votesCast;
+                const remainingPercentage = ((remainingVotes / totalVoters) * 100).toFixed(2);
 
-            const toggleDoc = await getDoc(resultsToggleRef);
-            const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
-            document.getElementById("candidateStatsContainer").style.display = resultsHidden ? "none" : "block";
+                document.getElementById("totalVoters").textContent = totalVoters;
+                document.getElementById("votesCast").textContent = votesCast;
+                document.getElementById("remainingVotes").textContent = 
+                    `${remainingVotes} (${remainingPercentage}%)`;
+        });
+    });
+}
 
-            candidateStatsTable.innerHTML = "";
+// Fix for fetchCandidateStats
+function fetchCandidateStats(electionID) {
+    const candidateStatsTable = document.getElementById("candidateStatsTable");
+    if (!candidateStatsTable) return;
 
-            const votesSnapshot = await onSnapshot(query(collection(db, "votes"), where("electionID", "==", electionID)));
-            if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
-                candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
-                return;
-            }
+    onSnapshot(resultsToggleRef, (toggleDoc) => {
+        const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
+        document.getElementById("candidateStatsContainer").style.display = 
+            resultsHidden ? "none" : "block";
 
-            const votes = votesSnapshot.docs.map(doc => doc.data());
-            const candidateCounts = {};
+        onSnapshot(query(collection(db, "votes"), 
+            where("electionID", "==", electionID)), 
+            (votesSnapshot) => {
+                candidateStatsTable.innerHTML = "";
 
-            votes.forEach((vote) => {
-                candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
-            });
+                if (votesSnapshot.empty) {
+                    candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
+                    return;
+                }
 
-            for (const [candidate, count] of Object.entries(candidateCounts)) {
-                const percentage = ((count / votes.length) * 100).toFixed(2);
-                const row = document.createElement("tr");
-                row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : `<td>${count}</td><td>${percentage}%</td>`}`;
-                candidateStatsTable.appendChild(row);
-            }
-        }
-        // ✅ Fetch Vote Statistics
-        async function fetchVoteStats(electionID) {
-            const votersSnapshot = await onSnapshot(collection(db, "voters"));
-            const totalVoters = votersSnapshot.size;
+                const votes = votesSnapshot.docs.map(doc => doc.data());
+                const candidateCounts = {};
 
-            const votesSnapshot = await onSnapshot(query(collection(db, "votes"), where("electionID", "==", electionID)));
-            const votesCast = votesSnapshot.size;
-            const remainingVotes = totalVoters - votesCast;
-            const remainingPercentage = ((remainingVotes / totalVoters) * 100).toFixed(2);
+                votes.forEach((vote) => {
+                    candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+                });
 
-            document.getElementById("totalVoters").textContent = totalVoters;
-            document.getElementById("votesCast").textContent = votesCast;
-            document.getElementById("remainingVotes").textContent = `${remainingVotes} (${remainingPercentage}%)`;
-        }
+                for (const [candidate, count] of Object.entries(candidateCounts)) {
+                    const percentage = ((count / votes.length) * 100).toFixed(2);
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
+                        `<td>${count}</td><td>${percentage}%</td>`}`;
+                    candidateStatsTable.appendChild(row);
+                }
+        });
+    });
+}
+(electionID) => {
+    const candidateStatsTable = document.getElementById("candidateStatsTable");
+    if (!candidateStatsTable) return;
+
+    const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
+    document.getElementById("candidateStatsContainer").style.display = resultsHidden ? "none" : "block";
+
+    candidateStatsTable.innerHTML = "";
+
+    const votesSnapshot = onSnapshot(query(collection(db, "votes"), where("electionID", "==", electionID)));
+    if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
+        candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
+        return;
+    }
+
+    const votes = votesSnapshot.docs.map(doc => doc.data());
+    const candidateCounts = {};
+
+    votes.forEach((vote) => {
+        candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+    });
+
+    for (const [candidate, count] of Object.entries(candidateCounts)) {
+        const percentage = ((count / votes.length) * 100).toFixed(2);
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : `<td>${count}</td><td>${percentage}%</td>`}`;
+        candidateStatsTable.appendChild(row);
+    }
+}
+
 
         document.addEventListener("DOMContentLoaded", () => {
             console.log("Page loaded. Listening for election updates.");
