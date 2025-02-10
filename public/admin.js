@@ -565,6 +565,83 @@ window.loadElectionDropdown = async function () {
             electionDropdown.appendChild(option);
         });
 
+        // Add event listener to handle election change
+        electionDropdown.addEventListener("change", async () => {
+            const selectedElectionID = electionDropdown.value;
+            console.log(`Election ID changed to: ${selectedElectionID}`);
+
+            try {
+                // Store the selected election ID in Firestore
+                await setDoc(doc(db, "admin", "currentElection"), { electionID: selectedElectionID });
+
+                // Verify the update
+                console.log("Verifying election ID update in Firestore...");
+                const verificationDoc = await getDoc(doc(db, "admin", "currentElection"));
+
+                if (verificationDoc.exists()) {
+                    const verifiedData = verificationDoc.data();
+                    console.log("Verification Results:");
+                    console.log("Expected Election ID:", selectedElectionID);
+                    console.log("Stored Election ID:", verifiedData.electionID);
+
+                    if (verifiedData.electionID === selectedElectionID) {
+                        console.log("✅ Election ID successfully verified in Firebase!");
+                    } else {
+                        console.error("❌ Election ID verification failed - data mismatch!");
+                        alert("Warning: Election ID update showed inconsistent data.");
+                    }
+                } else {
+                    console.error("❌ Election ID verification failed - document not found!");
+                    alert("Error: Election ID update could not be verified!");
+                }
+
+                // Refresh voting results for the new election
+                await loadVotingResults();
+            } catch (error) {
+                console.error("Error updating election ID in Firestore:", error);
+            }
+        });
+
+    } catch (error) {
+        console.error("Error loading elections:", error);
+        electionDropdown.innerHTML = `<option value="">Error Loading Elections</option>`;
+    }
+};
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("electionSelect")) {
+        window.loadElectionDropdown();
+    }
+});
+window.loadElectionDropdown = async function () {
+    const electionDropdown = document.getElementById("electionSelect");
+
+    if (!electionDropdown) {
+        console.error("Error: 'electionSelect' element not found in the DOM.");
+        return;
+    }
+
+    try {
+        // Fetch elections from Firestore
+        const electionsSnapshot = await getDocs(collection(db, "elections"));
+
+        // Clear existing options
+        electionDropdown.innerHTML = "";
+
+        // Check if elections exist
+        if (electionsSnapshot.empty) {
+            electionDropdown.innerHTML = `<option value="">No Elections Found</option>`;
+            return;
+        }
+
+        // Populate dropdown with elections
+        electionsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            const option = document.createElement("option");
+            option.value = doc.id; // Election document ID
+            option.textContent = data.electionID; // Display Name
+            electionDropdown.appendChild(option);
+        });
+
     } catch (error) {
         console.error("Error loading elections:", error);
         electionDropdown.innerHTML = `<option value="">Error Loading Elections</option>`;
