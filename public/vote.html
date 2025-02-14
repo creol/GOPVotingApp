@@ -29,57 +29,14 @@
     <div id="confirmation"></div>
 
     <!-- Clear Info Button -->
-<button onclick="resetForm()">Clear Info</button>
-
+    <button onclick="resetForm()">Clear Info</button>
 
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, doc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Add this variable at the top of your script to track the last known election ID
-let lastKnownElectionID = null;
-
-// Modified checkElectionStatus function
-async function checkElectionStatus() {
-    const electionNameElement = document.getElementById("electionName");
-    const validateButton = document.getElementById("validateButton");
-
-    try {
-        const electionQuery = query(collection(db, "elections"), where("active", "==", true));
-        const electionSnapshot = await getDocs(electionQuery);
-
-        if (!electionSnapshot.empty) {
-            const activeElection = electionSnapshot.docs[0].data();
-            const electionID = activeElection.electionID || "Election Name Not Set"; 
-
-            // Check if this is a new election ID
-            if (electionID !== lastKnownElectionID) {
-                console.log(`New election detected! Election ID: ${electionID}`);
-                lastKnownElectionID = electionID;
-            }
-
-            electionNameElement.textContent = electionID;
-            validateButton.disabled = false;
-        } else {
-            electionNameElement.textContent = "No active elections";
-            validateButton.disabled = true;
-            
-            // Reset lastKnownElectionID if no active election
-            if (lastKnownElectionID !== null) {
-                console.log("No active election detected");
-                lastKnownElectionID = null;
-            }
-        }
-    } catch (error) {
-        console.error("Error fetching election status:", error);
-        electionNameElement.textContent = "Error checking election";
-        validateButton.disabled = true;
-    }
-}
-
-
-        // 🔹 Firebase Config
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBK3jFdXbfHqV43kn3hzE1TA9-zt3jt180",
             authDomain: "republican-party-voting-system.firebaseapp.com",
@@ -90,11 +47,52 @@ async function checkElectionStatus() {
             measurementId: "G-THQJN6HYQD"
         };
 
-        // 🔹 Initialize Firebase & Firestore
+        // Initialize Firebase & Firestore
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-// ✅ Submit Vote & Assign Confirmation Number
+        // Add this variable at the top of your script to track the last known election ID
+        let lastKnownElectionID = null;
+
+        // Modified checkElectionStatus function
+        async function checkElectionStatus() {
+            const electionNameElement = document.getElementById("electionName");
+            const validateButton = document.getElementById("validateButton");
+
+            try {
+                const electionQuery = query(collection(db, "elections"), where("active", "==", true));
+                const electionSnapshot = await getDocs(electionQuery);
+
+                if (!electionSnapshot.empty) {
+                    const activeElection = electionSnapshot.docs[0].data();
+                    const electionID = activeElection.electionID || "Election Name Not Set"; 
+
+                    // Check if this is a new election ID
+                    if (electionID !== lastKnownElectionID) {
+                        console.log(`New election detected! Election ID: ${electionID}`);
+                        lastKnownElectionID = electionID;
+                    }
+
+                    electionNameElement.textContent = electionID;
+                    validateButton.disabled = false;
+                } else {
+                    electionNameElement.textContent = "No active elections";
+                    validateButton.disabled = true;
+                    
+                    // Reset lastKnownElectionID if no active election
+                    if (lastKnownElectionID !== null) {
+                        console.log("No active election detected");
+                        lastKnownElectionID = null;
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching election status:", error);
+                electionNameElement.textContent = "Error checking election";
+                validateButton.disabled = true;
+            }
+        }
+
+        // Submit Vote & Assign Confirmation Number
         async function submitVote() {
             const voterID = document.getElementById("voterID").value.trim();
             if (!voterID) {
@@ -109,21 +107,21 @@ async function checkElectionStatus() {
             }
 
             const confirmationNumber = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const electionID = await getActiveElectionID(); // ✅ Get active election ID
+            const electionID = await getActiveElectionID(); // Get active election ID
 
             try {
                 const batch = writeBatch(db);
 
-                // 🔹 Save Vote to Firestore
+                // Save Vote to Firestore
                 const voteRef = doc(collection(db, "votes"));
                 batch.set(voteRef, {
-                    electionID: electionID, // ✅ Now stores the correct active election ID
+                    electionID: electionID, // Now stores the correct active election ID
                     candidate: candidate,
                     confirmationNumber: confirmationNumber,
                     timestamp: new Date()
                 });
 
-                // 🔹 Mark Voter ID as Used
+                // Mark Voter ID as Used
                 const voterQuery = query(collection(db, "voters"), where("voterID", "==", voterID), where("used", "==", false));
                 const voterSnapshot = await getDocs(voterQuery);
                 voterSnapshot.forEach((docSnapshot) => {
@@ -131,7 +129,7 @@ async function checkElectionStatus() {
                     batch.update(voterRef, { used: true });
                 });
 
-                // 🔹 Update Candidate Vote Count
+                // Update Candidate Vote Count
                 const candidateQuery = query(collection(db, "candidates"), where("name", "==", candidate));
                 const candidateSnapshot = await getDocs(candidateQuery);
                 candidateSnapshot.forEach((docSnapshot) => {
@@ -141,10 +139,10 @@ async function checkElectionStatus() {
                     });
                 });
 
-                // 🔹 Commit All Updates in One Transaction
+                // Commit All Updates in One Transaction
                 await batch.commit();
 
-                // 🔹 Display Confirmation Message
+                // Display Confirmation Message
                 document.getElementById("confirmation").innerHTML = `
                     Your vote for <b>${candidate}</b> has been recorded.<br>
                     Election: <b>${electionID}</b><br>
@@ -160,8 +158,7 @@ async function checkElectionStatus() {
             }
         }
 
-
-        // ✅ Get Active Election ID
+        // Get Active Election ID
         async function getActiveElectionID() {
             try {
                 const electionQuery = query(collection(db, "elections"), where("active", "==", true));
@@ -179,7 +176,7 @@ async function checkElectionStatus() {
             }
         }
 
-        // ✅ Load Candidates from Firestore
+        // Load Candidates from Firestore
         async function loadCandidates() {
             try {
                 const candidatesDropdown = document.getElementById("candidateSelect");
@@ -204,37 +201,11 @@ async function checkElectionStatus() {
 
         document.addEventListener("DOMContentLoaded", loadCandidates);
 
-        // ✅ Function to check active election status and update UI
-        async function checkElectionStatus() {
-            const electionNameElement = document.getElementById("electionName");
-            const validateButton = document.getElementById("validateButton");
-
-            try {
-                const electionQuery = query(collection(db, "elections"), where("active", "==", true));
-                const electionSnapshot = await getDocs(electionQuery);
-
-                if (!electionSnapshot.empty) {
-                    const activeElection = electionSnapshot.docs[0].data();
-                    const electionID = activeElection.electionID || "Election Name Not Set"; 
-
-                    electionNameElement.textContent = electionID;
-                    validateButton.disabled = false;
-                } else {
-                    electionNameElement.textContent = "No active elections";
-                    validateButton.disabled = true;
-                }
-            } catch (error) {
-                console.error("Error fetching election status:", error);
-                electionNameElement.textContent = "Error checking election";
-                validateButton.disabled = true;
-            }
-        }
-
-        // ✅ Run Election Status Check Every 10 Seconds
+        // Run Election Status Check Every 10 Seconds
         setInterval(checkElectionStatus, 10000);
         document.addEventListener("DOMContentLoaded", checkElectionStatus);
 
-        // ✅ Validate Voter ID Against Firestore
+        // Validate Voter ID Against Firestore
         async function validateVoter() {
             const voterIDInput = document.getElementById("voterID");
             const validateButton = document.getElementById("validateButton");
@@ -269,45 +240,44 @@ async function checkElectionStatus() {
             }
         }
 
-// ✅ Fully Reset the Form
-function resetForm() {
-    const voterIDInput = document.getElementById("voterID");
-    const validateButton = document.getElementById("validateButton");
-    const validVoterMessage = document.getElementById("validVoterMessage");
-    const confirmationDiv = document.getElementById("confirmation");
-    const candidateSelect = document.getElementById("candidateSelect");
+        // Fully Reset the Form
+        function resetForm() {
+            const voterIDInput = document.getElementById("voterID");
+            const validateButton = document.getElementById("validateButton");
+            const validVoterMessage = document.getElementById("validVoterMessage");
+            const confirmationDiv = document.getElementById("confirmation");
+            const candidateSelect = document.getElementById("candidateSelect");
 
-    // Reset Voter ID input field
-    voterIDInput.value = "";
-    voterIDInput.style.display = "inline-block";
+            // Reset Voter ID input field
+            voterIDInput.value = "";
+            voterIDInput.style.display = "inline-block";
 
-    // Show the Validate button again
-    validateButton.style.display = "inline-block";
-    validateButton.disabled = false;
+            // Show the Validate button again
+            validateButton.style.display = "inline-block";
+            validateButton.disabled = false;
 
-    // Remove "Valid VoterID" message if it exists
-    if (validVoterMessage) {
-        validVoterMessage.remove();
-    }
+            // Remove "Valid VoterID" message if it exists
+            if (validVoterMessage) {
+                validVoterMessage.remove();
+            }
 
-    // Hide the voting section
-    document.getElementById("votingSection").style.display = "none";
+            // Hide the voting section
+            document.getElementById("votingSection").style.display = "none";
 
-    // Clear confirmation message
-    confirmationDiv.innerHTML = "";
+            // Clear confirmation message
+            confirmationDiv.innerHTML = "";
 
-    // Reset candidate selection to the first option
-    if (candidateSelect.options.length > 0) {
-        candidateSelect.selectedIndex = 0;
-    }
-}
+            // Reset candidate selection to the first option
+            if (candidateSelect.options.length > 0) {
+                candidateSelect.selectedIndex = 0;
+            }
+        }
 
-
-// 🔹 Make Functions Globally Accessible
-window.validateVoter = validateVoter;
-window.submitVote = submitVote;
-window.resetForm = resetForm;
-window.getActiveElectionID = getActiveElectionID;
+        // Make Functions Globally Accessible
+        window.validateVoter = validateVoter;
+        window.submitVote = submitVote;
+        window.resetForm = resetForm;
+        window.getActiveElectionID = getActiveElectionID;
 
     </script>
 </body>

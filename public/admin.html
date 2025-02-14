@@ -149,18 +149,6 @@ window.toggleResultsVisibility = async function () {
     }
 };
 
-
-        //async function toggleResultsVisibility() {
-            //const toggleDoc = await getDoc(resultsToggleRef);
-            //const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
-
-            // ✅ Toggle the value in Firestore
-            //await setDoc(resultsToggleRef, { hidden: !resultsHidden });
-
-            // ✅ Update the button UI
-            //updateToggleButton(!resultsHidden);
-       // }
-
         // ✅ Update Button UI Safely
 function updateToggleButton(resultsHidden) {
     const button = document.getElementById("toggleResultsButton");
