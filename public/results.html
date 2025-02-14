@@ -37,6 +37,7 @@
             onSnapshot(electionRef, async (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     selectedElectionID = docSnapshot.data().electionID;
+                    console.log(`Election ID: ${selectedElectionID}`);
                     document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
 
                     listenForLiveVotingResults(selectedElectionID);
