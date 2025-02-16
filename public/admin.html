@@ -45,10 +45,12 @@
     <label for="electionSelect">Select Election:</label>
     <select id="electionSelect" onchange="updateElectionID()"></select>
 
-    <!-- ✅ Toggle Button with ID -->
-    <button id="toggleResultsButton" onclick="toggleResultsVisibility()" style="background-color: red; color: white; border: none; padding: 10px; font-size: 16px;">
-        <span id="toggleIcon">👁️‍🗨️</span> Results Hidden
-    </button>
+    
+    <h3>Toggle Results Visibility</h3>
+    <select id="resultsVisibility" onchange="toggleResultsVisibility()">
+       <option value="show">Show Results</option>
+       <option value="hide">Hide Results</option>
+    </select>
 
     <!-- ✅ Vote Stats Table (Missing Section) -->
     <h2>Vote Stats</h2>
@@ -82,13 +84,6 @@
     </thead>
     <tbody id="resultsTable"></tbody>
 </table>
-
-
-<h3>Toggle Results Visibility</h3>
-<select id="resultsVisibility" onchange="toggleResultsVisibility()">
-    <option value="show">Show Results</option>
-    <option value="hide">Hide Results</option>
-</select>
 
     <!-- ✅ Election History Table -->
     <h2>Election History</h2>
