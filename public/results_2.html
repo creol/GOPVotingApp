@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voting Results</title>
-    <script>
+   // <script>
         // Redirect to mobile version if the user is on a mobile device
-        if (/Mobi|Android/i.test(navigator.userAgent)) {
-            window.location.href = "mobile.html";
-        }
-    </script>
+     //   if (/Mobi|Android/i.test(navigator.userAgent)) {
+     //       window.location.href = "mobile.html";
+     //   }
+   // </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, query, where, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
