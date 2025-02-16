@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voting Results - Mobile</title>
+    <title>Voting Results (Mobile)</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, where, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, getDocs, where, doc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ✅ Firebase Configuration
         const firebaseConfig = {
@@ -22,223 +22,228 @@
         // ✅ Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const electionRef = doc(db, "admin", "currentElection");
-        const resultsToggleRef = doc(db, "settings", "resultsHidden"); // 🔹 Toggle Visibility Control
+        const electionRef = doc(db, "settings", "currentElection");
+        const resultsToggleRef = doc(db, "settings", "resultsHidden");  // 🔹 New Firestore Doc for Toggle State
 
         let selectedElectionID = null;
 
         function listenForElectionIDChanges() {
-            onSnapshot(electionRef, (docSnapshot) => {
+            onSnapshot(electionRef, async (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     selectedElectionID = docSnapshot.data().electionID;
-                    console.log(`Election ID: ${selectedElectionID}`);
                     document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
-
-                    listenForLiveVotingResults(selectedElectionID);
-                    fetchCandidateStats(selectedElectionID);
-                    fetchVoteStats(selectedElectionID);
+                    
+                    await fetchVotingResults(selectedElectionID);
+                    await fetchCandidateStats(selectedElectionID)
+					console.log(`Fetching candidateStats#1`);
+                    await fetchVoteStats(selectedElectionID);
                 }
             });
 
-            onSnapshot(resultsToggleRef, (docSnapshot) => {
+            // 🔹 Listen for Result Toggle Changes from Firestore
+            onSnapshot(resultsToggleRef, async (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const resultsHidden = docSnapshot.data().hidden;
                     updateResultsVisibilityMessage(resultsHidden);
-                    listenForLiveVotingResults(selectedElectionID);
-                    fetchCandidateStats(selectedElectionID);
-                    fetchVoteStats(selectedElectionID);
+                    await fetchVotingResults(selectedElectionID);
+                    //await fetchCandidateStats(selectedElectionID)
+					//console.log(`Fetching candidateStats#2`);
                 }
             });
         }
 
-        // ✅ Fetch Voting Results
-        async function listenForLiveVotingResults(electionID) {
-            console.log(`Listening for live updates on election ID: ${electionID}`);
+        // ✅ Fetch Voting Results (Uses Grid & Toggle Visibility)
+        async function fetchVotingResults(electionID) {
+            console.log(`Fetching results for election ID: ${electionID}`);
 
             const resultsContainer = document.getElementById("resultsContainer");
-            resultsContainer.innerHTML = ""; 
+            resultsContainer.innerHTML = ""; // ✅ Clear previous results
 
-            const votesQuery = query(collection(db, "votes"), where("electionID", "==", electionID));
+            const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+            const toggleDoc = await getDoc(resultsToggleRef);
+            const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
 
-            onSnapshot(votesQuery, (snapshot) => {
-                resultsContainer.innerHTML = ""; // Clear old results
-
-                if (snapshot.empty) {
-                    resultsContainer.innerHTML = "<p>No votes yet.</p>";
-                    return;
-                }
-
-                snapshot.docs.forEach((doc) => {
-                    const vote = doc.data();
-                    const candidateName = vote.candidate;
-
-                    const voteCard = document.createElement("div");
-                    voteCard.classList.add("vote-card");
-                    voteCard.textContent = `${vote.confirmationNumber} - ${candidateName}`;
-
-                    resultsContainer.appendChild(voteCard);
-                });
-            });
-        }
-
-        // ✅ Update Visibility Message
-        function updateResultsVisibilityMessage(resultsHidden) {
-            const resultsMessage = document.getElementById("resultsVisibilityMessage");
-            resultsMessage.textContent = resultsHidden ? "Results hidden during live votes!" : "";
-
-            // Hide or show the candidate stats table
-            const candidateStatsTable = document.getElementById("candidateStatsContainer"); 
-            if (candidateStatsTable) {
-                candidateStatsTable.style.display = resultsHidden ? "none" : "block";
+            if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
+                console.warn("No votes found.");
+                resultsContainer.innerHTML = "<p>No votes yet.</p>";
+                return;
             }
+
+            votesSnapshot.docs.forEach((doc) => {
+                const vote = doc.data();
+                const candidateName = resultsHidden ? "Hidden" : vote.candidate;
+
+                const voteCard = document.createElement("div");
+                voteCard.classList.add("vote-card");
+                voteCard.textContent = `${vote.confirmationNumber} - ${candidateName}`;
+
+                resultsContainer.appendChild(voteCard);
+            });
         }
 
         // ✅ Fetch Candidate Statistics
-        function fetchVoteStats(electionID) {
-            // Listen to voters collection
-            onSnapshot(collection(db, "voters"), (votersSnapshot) => {
-                const totalVoters = votersSnapshot.size;
-                
-                // Listen to votes for specific election
-                onSnapshot(query(collection(db, "votes"), 
-                    where("electionID", "==", electionID)), 
-                    (votesSnapshot) => {
-                        const votesCast = votesSnapshot.size;
-                        const remainingVotes = totalVoters - votesCast;
-                        const remainingPercentage = ((remainingVotes / totalVoters) * 100).toFixed(2);
+async function fetchCandidateStats(electionID) {
+    const candidateStatsTable = document.getElementById("candidateStatsTable");
+    const candidateStatsContainer = document.getElementById("candidateStatsContainer");
 
-                        document.getElementById("totalVoters").textContent = totalVoters;
-                        document.getElementById("votesCast").textContent = votesCast;
-                        document.getElementById("remainingVotes").textContent = 
-                            `${remainingVotes} (${remainingPercentage}%)`;
-                });
-            });
-        }
+    if (!candidateStatsTable || !candidateStatsContainer) {
+        console.error("Candidate stats table container is missing.");
+        return;
+    }
 
-        // Fix for fetchCandidateStats
-        function fetchCandidateStats(electionID) {
-            const candidateStatsTable = document.getElementById("candidateStatsTable");
-            if (!candidateStatsTable) return;
+    // Check resultsHidden from Firestore
+    const toggleDoc = await getDoc(resultsToggleRef);
+    const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
 
-            onSnapshot(resultsToggleRef, (toggleDoc) => {
-                const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
-                document.getElementById("candidateStatsContainer").style.display = 
-                    resultsHidden ? "none" : "block";
+    // Hide or show the candidate stats container
+    candidateStatsContainer.style.display = resultsHidden ? "none" : "block";
 
-                onSnapshot(query(collection(db, "votes"), 
-                    where("electionID", "==", electionID)), 
-                    (votesSnapshot) => {
-                        candidateStatsTable.innerHTML = "";
+    candidateStatsTable.innerHTML = "";
 
-                        if (votesSnapshot.empty) {
-                            candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
-                            return;
-                        }
+    const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
 
-                        const votes = votesSnapshot.docs.map(doc => doc.data());
-                        const candidateCounts = {};
+    if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
+        candidateStatsTable.innerHTML = "<tr><td>No votes yet</td></tr>";
+        return;
+    }
 
-                        votes.forEach((vote) => {
-                            candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
-                        });
+    const votes = votesSnapshot.docs.map(doc => doc.data());
+    const candidateCounts = {};
+    votes.forEach((vote) => {
+        candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+    });
 
-                        for (const [candidate, count] of Object.entries(candidateCounts)) {
-                            const percentage = ((count / votes.length) * 100).toFixed(2);
-                            const row = document.createElement("tr");
-                            row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
-                                `<td>${count}</td><td>${percentage}%</td>`}`;
-                            candidateStatsTable.appendChild(row);
-                        }
-                });
-            });
-        }
+    for (const [candidate] of Object.entries(candidateCounts)) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : `<td>${candidateCounts[candidate]}</td><td>${((candidateCounts[candidate] / votes.length) * 100).toFixed(2)}%</td>`}`;
+        candidateStatsTable.appendChild(row);
+    }
+}
+
+
+        // ✅ Fetch Vote Statistics
+		async function fetchVoteStats(electionID) {
+			const totalVotersElem = document.getElementById("totalVoters");
+			const votesCastElem = document.getElementById("votesCast");
+			const remainingVotesElem = document.getElementById("remainingVotes");
+
+			if (!totalVotersElem || !votesCastElem || !remainingVotesElem) {
+				console.error("One or more vote stats elements are missing.");
+				return;
+			}
+
+			const votersSnapshot = await getDocs(collection(db, "voters"));
+			const totalVoters = votersSnapshot.size;
+
+			const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+			const votesCast = votesSnapshot.size;
+			const remainingVotes = totalVoters - votesCast;
+			const remainingPercentage = totalVoters > 0 ? ((remainingVotes / totalVoters) * 100).toFixed(2) : "0";
+
+			totalVotersElem.textContent = totalVoters;
+			votesCastElem.textContent = votesCast;
+			remainingVotesElem.textContent = `${remainingVotes} (${remainingPercentage}%)`;
+		}
+
+        // ✅ Update Visibility Message
+        function updateResultsVisibilityMessage(resultsHidden) {
+			const resultsMessage = document.getElementById("resultsVisibilityMessage");
+			resultsMessage.textContent = resultsHidden ? "Results hidden during live votes!" : "";
+
+			// Hide or show the candidate stats table
+			const candidateStatsTable = document.getElementById("candidateStatsContainer"); 
+			if (candidateStatsTable) {
+				candidateStatsTable.style.display = resultsHidden ? "none" : "block";
+			}
+		}
+
 
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("Page loaded. Listening for election updates.");
+            console.log("Mobile page loaded. Listening for election updates.");
             listenForElectionIDChanges();
         });
     </script>
-
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             display: flex;
-            overflow: hidden;
-        }
-        #leftContainer {
-            width: 25%;
-            min-width: 240px;
-            padding: 20px;
-            background-color: #d8dee9;
-            color: #223A5E;
-            overflow: auto;
-            border-right: 3px solid #223A5E;
-        }
-        #mainContainer {
-            flex-grow: 1;
-            display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
             background-color: #223A5E;
             color: #ffffff;
-            overflow-y: auto;
+            padding: 10px;
+            overflow-x: hidden;
         }
         h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        #resultsVisibilityMessage {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 15px;
         }
         #resultsContainer {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
             padding: 10px;
-            justify-content: center;
             width: 100%;
         }
         .vote-card {
             background-color: #d8dee9;
             color: #223A5E;
-            padding: 10px;
+            padding: 12px;
             text-align: center;
             border: 2px solid #223A5E;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div id="leftContainer">
-        <h2>Vote Count</h2>
-        <div id="voteCountContainer">
-            <table>
-                <tr><th>Total Voters</th><td id="totalVoters">0</td></tr>
-                <tr><th>Votes Cast</th><td id="votesCast">0</td></tr>
-                <tr><th>Remaining Votes</th><td id="remainingVotes">0 (0%)</td></tr>
-            </table>
-        </div>
+    <h1 id="electionIDHeader">Election ID: N/A</h1>
 
-        <h2>Candidate Stats</h2>
-        <div id="resultsVisibilityMessage" style="color: red; font-weight: bold;"></div>
-        <div id="candidateStatsContainer">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Candidate</th>
-                        <th>Votes</th>
-                        <th>%</th>
-                    </tr>
-                </thead>
-                <tbody id="candidateStatsTable"></tbody>
-            </table>
-        </div>
-    </div>
+<h2>Vote Statistics</h2>
+<table border="1">
+    <thead>
+        <tr>
+            <th>Total Voters</th>
+            <th>Votes Cast</th>
+            <th>Remaining Votes</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td id="totalVoters">0</td>
+            <td id="votesCast">0</td>
+            <td id="remainingVotes">0 (0.00%)</td>
+        </tr>
+    </tbody>
+</table>
 
-    <div id="mainContainer">
-        <h1 id="electionIDHeader">Election ID: N/A</h1>
-        <div id="resultsContainer"></div>
-    </div>
+<h2>Candidate Stats</h2>
+<div id="resultsVisibilityMessage"></div>
+<div id="candidateStatsContainer">
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Candidate</th>
+                <th>Votes</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody id="candidateStatsTable"></tbody>
+    </table>
+</div>
+
+
+    <h2>Voting Results</h2>
+    <div id="resultsContainer"></div>
 </body>
 </html>
