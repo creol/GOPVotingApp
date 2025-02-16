@@ -6,13 +6,13 @@
     <title>Voting Results</title>
     <script>
         // Redirect to mobile version if the user is on a mobile device
-        //if (/Mobi|Android/i.test(navigator.userAgent)) {
-        //    window.location.href = "mresults.html";
-        //}
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            window.location.href = "mobile.html";
+        }
     </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, getDocs, where, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ✅ Firebase Configuration
         const firebaseConfig = {
@@ -28,105 +28,135 @@
         // ✅ Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const electionRef = doc(db, "settings", "currentElection");
+        const electionRef = doc(db, "admin", "currentElection");
+        const resultsToggleRef = doc(db, "settings", "resultsHidden"); // 🔹 Toggle Visibility Control
 
         let selectedElectionID = null;
 
         function listenForElectionIDChanges() {
-            onSnapshot(electionRef, async (docSnapshot) => {
+            onSnapshot(electionRef, (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     selectedElectionID = docSnapshot.data().electionID;
+                    console.log(`Election ID: ${selectedElectionID}`);
                     document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
-                    
-                    await fetchVotingResults(selectedElectionID);
-                    await fetchCandidateStats(selectedElectionID);
-                    await fetchVoteStats(selectedElectionID);
+
+                    listenForLiveVotingResults(selectedElectionID);
+                    fetchCandidateStats(selectedElectionID);
+                    fetchVoteStats(selectedElectionID);
+                }
+            });
+
+            onSnapshot(resultsToggleRef, (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const resultsHidden = docSnapshot.data().hidden;
+                    updateResultsVisibilityMessage(resultsHidden);
+                    listenForLiveVotingResults(selectedElectionID);
+                    fetchCandidateStats(selectedElectionID);
+                    fetchVoteStats(selectedElectionID);
                 }
             });
         }
 
-        // ✅ Fetch Voting Results (Now Uses Grid)
-        async function fetchVotingResults(electionID) {
-            console.log(`Fetching results for election ID: ${electionID}`);
+        // ✅ Fetch Voting Results
+        async function listenForLiveVotingResults(electionID) {
+            console.log(`Listening for live updates on election ID: ${electionID}`);
 
             const resultsContainer = document.getElementById("resultsContainer");
-            resultsContainer.innerHTML = ""; // ✅ Clear previous results
+            resultsContainer.innerHTML = ""; 
 
-            const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
+            const votesQuery = query(collection(db, "votes"), where("electionID", "==", electionID));
 
-            if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
-                console.warn("No votes found.");
-                resultsContainer.innerHTML = "<p>No votes yet.</p>";
-                return;
-            }
+            onSnapshot(votesQuery, (snapshot) => {
+                resultsContainer.innerHTML = ""; // Clear old results
 
-            votesSnapshot.docs.forEach((doc) => {
-                const vote = doc.data();
-                console.log(`Adding vote: ${vote.confirmationNumber} - ${vote.candidate}`);
+                if (snapshot.empty) {
+                    resultsContainer.innerHTML = "<p>No votes yet.</p>";
+                    return;
+                }
 
-                const voteCard = document.createElement("div");
-                voteCard.classList.add("vote-card");
-                voteCard.textContent = `${vote.confirmationNumber} - ${vote.candidate}`;
+                snapshot.docs.forEach((doc) => {
+                    const vote = doc.data();
+                    const candidateName = vote.candidate;
 
-                resultsContainer.appendChild(voteCard);
+                    const voteCard = document.createElement("div");
+                    voteCard.classList.add("vote-card");
+                    voteCard.textContent = `${vote.confirmationNumber} - ${candidateName}`;
+
+                    resultsContainer.appendChild(voteCard);
+                });
             });
-
-            console.log("Final resultsContainer content:", resultsContainer.innerHTML);
         }
 
-        // ✅ Prevents duplicate updates when resizing
-        let resizeTimeout;
-        window.addEventListener("resize", () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                if (selectedElectionID) {
-                    console.log("Window resized. Re-fetching results.");
-                    fetchVotingResults(selectedElectionID);
-                }
-            }, 500);
-        });
+        // ✅ Update Visibility Message
+        function updateResultsVisibilityMessage(resultsHidden) {
+            const resultsMessage = document.getElementById("resultsVisibilityMessage");
+            resultsMessage.textContent = resultsHidden ? "Results hidden during live votes!" : "";
+
+            // Hide or show the candidate stats table
+            const candidateStatsTable = document.getElementById("candidateStatsContainer"); 
+            if (candidateStatsTable) {
+                candidateStatsTable.style.display = resultsHidden ? "none" : "block";
+            }
+        }
 
         // ✅ Fetch Candidate Statistics
-        async function fetchCandidateStats(electionID) {
-            const candidateStatsTable = document.getElementById("candidateStatsTable");
-            candidateStatsTable.innerHTML = "";
+        function fetchVoteStats(electionID) {
+            // Listen to voters collection
+            onSnapshot(collection(db, "voters"), (votersSnapshot) => {
+                const totalVoters = votersSnapshot.size;
+                
+                // Listen to votes for specific election
+                onSnapshot(query(collection(db, "votes"), 
+                    where("electionID", "==", electionID)), 
+                    (votesSnapshot) => {
+                        const votesCast = votesSnapshot.size;
+                        const remainingVotes = totalVoters - votesCast;
+                        const remainingPercentage = ((remainingVotes / totalVoters) * 100).toFixed(2);
 
-            const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
-
-            if (votesSnapshot.empty || votesSnapshot.docs.length === 0) {
-                candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
-                return;
-            }
-
-            const votes = votesSnapshot.docs.map(doc => doc.data());
-            const candidateCounts = {};
-
-            votes.forEach((vote) => {
-                candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+                        document.getElementById("totalVoters").textContent = totalVoters;
+                        document.getElementById("votesCast").textContent = votesCast;
+                        document.getElementById("remainingVotes").textContent = 
+                            `${remainingVotes} (${remainingPercentage}%)`;
+                });
             });
-
-            const totalVotes = votes.length;
-            for (const [candidate, count] of Object.entries(candidateCounts)) {
-                const percentage = ((count / totalVotes) * 100).toFixed(2);
-                const row = document.createElement("tr");
-                row.innerHTML = `<td>${candidate}</td><td>${count}</td><td>${percentage}%</td>`;
-                candidateStatsTable.appendChild(row);
-            }
         }
 
-        // ✅ Fetch Vote Statistics
-        async function fetchVoteStats(electionID) {
-            const votersSnapshot = await getDocs(collection(db, "voters"));
-            const totalVoters = votersSnapshot.size;
+        // Fix for fetchCandidateStats
+        function fetchCandidateStats(electionID) {
+            const candidateStatsTable = document.getElementById("candidateStatsTable");
+            if (!candidateStatsTable) return;
 
-            const votesSnapshot = await getDocs(query(collection(db, "votes"), where("electionID", "==", electionID)));
-            const votesCast = votesSnapshot.size;
-            const remainingVotes = totalVoters - votesCast;
-            const remainingPercentage = ((remainingVotes / totalVoters) * 100).toFixed(2);
+            onSnapshot(resultsToggleRef, (toggleDoc) => {
+                const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden : false;
+                document.getElementById("candidateStatsContainer").style.display = 
+                    resultsHidden ? "none" : "block";
 
-            document.getElementById("totalVoters").textContent = totalVoters;
-            document.getElementById("votesCast").textContent = votesCast;
-            document.getElementById("remainingVotes").textContent = `${remainingVotes} (${remainingPercentage}%)`;
+                onSnapshot(query(collection(db, "votes"), 
+                    where("electionID", "==", electionID)), 
+                    (votesSnapshot) => {
+                        candidateStatsTable.innerHTML = "";
+
+                        if (votesSnapshot.empty) {
+                            candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
+                            return;
+                        }
+
+                        const votes = votesSnapshot.docs.map(doc => doc.data());
+                        const candidateCounts = {};
+
+                        votes.forEach((vote) => {
+                            candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
+                        });
+
+                        for (const [candidate, count] of Object.entries(candidateCounts)) {
+                            const percentage = ((count / votes.length) * 100).toFixed(2);
+                            const row = document.createElement("tr");
+                            row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
+                                `<td>${count}</td><td>${percentage}%</td>`}`;
+                            candidateStatsTable.appendChild(row);
+                        }
+                });
+            });
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -134,6 +164,7 @@
             listenForElectionIDChanges();
         });
     </script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -158,7 +189,7 @@
             padding: 10px;
             background-color: #223A5E;
             color: #ffffff;
-            overflow-y: auto; /* ✅ Allows scrolling if needed */
+            overflow-y: auto;
         }
         h1 {
             font-size: 24px;
@@ -166,7 +197,7 @@
         }
         #resultsContainer {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* ✅ Auto adjusts columns */
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
             padding: 10px;
             justify-content: center;
@@ -186,24 +217,31 @@
 </head>
 <body>
     <div id="leftContainer">
-        <h2>Vote Count Table</h2>
-        <table>
-            <tr><th>Total Voters</th><td id="totalVoters">0</td></tr>
-            <tr><th>Votes Cast</th><td id="votesCast">0</td></tr>
-            <tr><th>Remaining Votes</th><td id="remainingVotes">0 (0%)</td></tr>
-        </table>
+        <h2>Vote Count</h2>
+        <div id="voteCountContainer">
+            <table>
+                <tr><th>Total Voters</th><td id="totalVoters">0</td></tr>
+                <tr><th>Votes Cast</th><td id="votesCast">0</td></tr>
+                <tr><th>Remaining Votes</th><td id="remainingVotes">0 (0%)</td></tr>
+            </table>
+        </div>
+
         <h2>Candidate Stats</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Candidate</th>
-                    <th>Votes</th>
-                    <th>%</th>
-                </tr>
-            </thead>
-            <tbody id="candidateStatsTable"></tbody>
-        </table>
+        <div id="resultsVisibilityMessage" style="color: red; font-weight: bold;"></div>
+        <div id="candidateStatsContainer">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Votes</th>
+                        <th>%</th>
+                    </tr>
+                </thead>
+                <tbody id="candidateStatsTable"></tbody>
+            </table>
+        </div>
     </div>
+
     <div id="mainContainer">
         <h1 id="electionIDHeader">Election ID: N/A</h1>
         <div id="resultsContainer"></div>
