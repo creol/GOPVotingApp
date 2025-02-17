@@ -55,6 +55,7 @@
         // Delete a candidate
         async function deleteCandidate(candidateId) {
             await deleteDoc(doc(db, "candidates", candidateId));
+            location.reload();
         }
 
         // Check for active election
