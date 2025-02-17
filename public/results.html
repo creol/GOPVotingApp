@@ -33,7 +33,7 @@
                 if (docSnapshot.exists()) {
                     selectedElectionID = docSnapshot.data().electionID;
                     console.log(`Election ID: ${selectedElectionID}`);
-                    document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
+                    document.getElementById("electionIDHeader").textContent = `${selectedElectionID}`;
 
                     listenForLiveVotingResults(selectedElectionID);
                     fetchCandidateStats(selectedElectionID);
@@ -180,7 +180,8 @@
         #header {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            width: 100%;
             margin-bottom: 20px;
         }
         #header img {
@@ -234,11 +235,10 @@
 <body>
     <div id="header">
         <img src="./images/elephant.jpg" alt="GOP Logo">
-        <h1 id="electionIDHeader">Election ID: N/A</h1>
+        <h1 id="electionIDHeader">N/A</h1>
     </div>
     <div id="statsContainer">
         <div>
-            <h3>Vote Statistics</h3>
             <table border="1">
                 <thead>
                     <tr>
@@ -257,7 +257,6 @@
             </table>
         </div>
         <div>
-            <h3>Candidate Stats</h3>
             <div id="resultsVisibilityMessage"></div>
             <div id="candidateStatsContainer">
                 <table border="1">
