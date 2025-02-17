@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupElectionListener();
     // ... other initialization code ...
 });
+
 // ✅ Update Election ID with Verification
 window.updateElectionID = async function () {
     const electionSelect = document.getElementById("electionSelect");
@@ -362,6 +363,7 @@ window.uploadCandidates = async function (event) {
 window.checkElectionStatus = async function () {
     const uploadCandidatesInput = document.getElementById("uploadCandidates");
     const uploadVoterIdInput = document.getElementById("voterIdUpload");
+    const manageCandidatesButton = document.getElementById("manageCandidatesButton");
 
     if (!uploadCandidatesInput || !uploadVoterIdInput) {
         console.error("Upload Candidates or Voter IDs input field is missing in the HTML.");
@@ -378,12 +380,14 @@ window.checkElectionStatus = async function () {
             uploadCandidatesInput.title = "Candidates cannot be changed while an election is active.";
             uploadVoterIdInput.disabled = true;
             uploadVoterIdInput.title = "Voter IDs cannot be changed while an election is active.";
+            manageCandidatesButton.style.display = "none";
         } else {
             // No active election - Enable both inputs
             uploadCandidatesInput.disabled = false;
             uploadCandidatesInput.title = "";
             uploadVoterIdInput.disabled = false;
             uploadVoterIdInput.title = "";
+            manageCandidatesButton.style.display = "block";
         }
     } catch (error) {
         console.error("Error checking election status:", error);
