@@ -38,6 +38,10 @@
     <input type="number" id="roundNumber" min="1" value="1">
     
     <button onclick="startElection()">Start Election</button>
+    <select id="resultsVisibility" onchange="toggleResultsVisibility()">
+        <option value="show">Show Results</option>
+        <option value="hide">Hide Results</option>
+     </select>
     <button onclick="stopActiveElection()">Stop Election</button>
 
     <!-- ✅ Visibility Options (Results Toggle) -->
@@ -45,12 +49,12 @@
     <label for="electionSelect">Select Election:</label>
     <select id="electionSelect" onchange="updateElectionID()"></select>
 
-    
-    <h3>Toggle Results Visibility</h3>
+
+    <!-- <h3>Toggle Results Visibility</h3>
     <select id="resultsVisibility" onchange="toggleResultsVisibility()">
        <option value="show">Show Results</option>
        <option value="hide">Hide Results</option>
-    </select>
+    </select> -->
 
     <!-- ✅ Vote Stats Table (Missing Section) -->
     <h2>Vote Stats</h2>
