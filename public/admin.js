@@ -750,24 +750,24 @@ window.startElection = async function () {
 };
 
 // ✅ Load Election History
-window.loadElectionHistory = async function () {
-    const electionTable = document.getElementById("electionHistory");
-    electionTable.innerHTML = "";
+// window.loadElectionHistory = async function () {
+//     const electionTable = document.getElementById("electionHistory");
+//     electionTable.innerHTML = "";
 
-    try {
-        const electionsSnapshot = await getDocs(collection(db, "elections"));
-        electionsSnapshot.forEach((doc) => {
-            const data = doc.data();
-            electionTable.innerHTML += `<tr>
-                <td>${data.electionID}</td>
-                <td>${data.startTime || "-"}</td>
-                <td>${data.endTime || "Ongoing"}</td>
-            </tr>`;
-        });
-    } catch (error) {
-        console.error("Error loading election history:", error);
-    }
-};
+//     try {
+//         const electionsSnapshot = await getDocs(collection(db, "elections"));
+//         electionsSnapshot.forEach((doc) => {
+//             const data = doc.data();
+//             electionTable.innerHTML += `<tr>
+//                 <td>${data.electionID}</td>
+//                 <td>${data.startTime || "-"}</td>
+//                 <td>${data.endTime || "Ongoing"}</td>
+//             </tr>`;
+//         });
+//     } catch (error) {
+//         console.error("Error loading election history:", error);
+//     }
+// };
 
 // ✅ Fix Undefined Function Load Issue
 window.loadLatestElection = async function () {
