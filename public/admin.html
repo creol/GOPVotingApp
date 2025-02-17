@@ -8,6 +8,14 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- ✅ Load admin.js as a module -->
     <script type="module" src="admin.js"></script> 
+    <style>
+        .visibility-icon {
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+    </style>
 </head>
 <body>
     <!-- ✅ Centered Admin Portal Title -->
@@ -60,8 +68,8 @@
                     <h3>Manage Results Visibility</h3>
                     <label for="resultsVisibility">Results Visibility:</label>
                     <select id="resultsVisibility" class="form-control mb-2" onchange="toggleResultsVisibility()">
-                        <option value="showing">Show Results</option>
-                        <option value="hidden">Hide Results</option>
+                        <option value="hidden" selected>Hidden <img src="./images/eye-slash.svg" class="visibility-icon" alt="Hidden"></option>
+                        <option value="showing">Shown <img src="./images/eye.svg" class="visibility-icon" alt="Shown"></option>
                     </select>
 
                     <h3>Vote Stats</h3>
@@ -83,6 +91,10 @@
                     </table>
 
                     <h3>Voting Results</h3>
+                    <label for="electionIDSelect">Select Election ID:</label>
+                    <select id="electionIDSelect" class="form-control mb-2" onchange="updateResultsPage()">
+                        <!-- Options will be populated dynamically -->
+                    </select>
                     <button class="btn btn-primary mb-2" onclick="downloadResultsExcel()">Download Results as Excel</button>
                     <button class="btn btn-secondary mb-2" id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
                     <table class="table table-bordered">
@@ -122,5 +134,111 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script type="module">
+        import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // ✅ Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBK3jFdXbfHqV43kn3hzE1TA9-zt3jt180",
+            authDomain: "republican-party-voting-system.firebaseapp.com",
+            projectId: "republican-party-voting-system",
+            storageBucket: "republican-party-voting-system.appspot.com",
+            messagingSenderId: "834541676093",
+            appId: "1:834541676093:web:bf0eafa5e0f9ba68e0ec54",
+            measurementId: "G-THQJN6HYQD"
+        };
+
+        // ✅ Prevent Duplicate Firebase Initialization
+        const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const resultsToggleRef = doc(db, "settings", "resultsHidden");
+
+        // ✅ Toggle Results Visibility
+        window.toggleResultsVisibility = async function () {
+            const resultsVisibilityElement = document.getElementById("resultsVisibility");
+            
+            if (!resultsVisibilityElement) {
+                console.error("Error: 'resultsVisibility' select element not found.");
+                return;
+            }
+
+            const visibility = resultsVisibilityElement.value;
+
+            try {
+                await setDoc(resultsToggleRef, { hidden: visibility });
+
+                alert(`Results visibility set to: ${visibility}`);
+            } catch (error) {
+                console.error("Error updating results visibility:", error);
+            }
+        };
+
+        // ✅ Update Dropdown UI Safely
+        function updateDropdown(resultsHidden) {
+            const resultsVisibilityElement = document.getElementById("resultsVisibility");
+
+            if (!resultsVisibilityElement) {
+                console.warn("Results visibility dropdown is missing.");
+                return;
+            }
+
+            // Update dropdown value based on visibility
+            resultsVisibilityElement.value = resultsHidden;
+        }
+
+        // ✅ Load the Initial Toggle State *After* DOM is Ready
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("DOM fully loaded, initializing Firebase listeners.");
+
+            // ✅ Ensure Dropdown Exists Before Running
+            if (document.getElementById("resultsVisibility")) {
+                getDoc(resultsToggleRef).then((toggleDoc) => {
+                    if (toggleDoc.exists()) {
+                        updateDropdown(toggleDoc.data().hidden);
+                    }
+                });
+
+                // ✅ Listen for Firestore Changes
+                onSnapshot(resultsToggleRef, (docSnapshot) => {
+                    if (docSnapshot.exists()) {
+                        updateDropdown(docSnapshot.data().hidden);
+                    }
+                });
+            }
+
+            // ✅ Populate Election ID Dropdown
+            const electionIDSelect = document.getElementById("electionIDSelect");
+            if (electionIDSelect) {
+                const electionsQuery = query(collection(db, "elections"));
+                getDocs(electionsQuery).then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const option = document.createElement("option");
+                        option.value = doc.id;
+                        option.textContent = doc.data().name;
+                        electionIDSelect.appendChild(option);
+                    });
+                });
+            }
+        });
+
+        // ✅ Update Results Page Based on Selected Election ID
+        window.updateResultsPage = function () {
+            const electionIDSelect = document.getElementById("electionIDSelect");
+            const selectedElectionID = electionIDSelect.value;
+            // Logic to update the results page based on selectedElectionID
+            console.log(`Selected Election ID: ${selectedElectionID}`);
+        };
+
+        // ✅ Toggle Sort Order
+        window.toggleSortOrder = function () {
+            const toggleSortButton = document.getElementById("toggleSort");
+            const currentOrder = toggleSortButton.textContent.includes("Official") ? "Official" : "Alphabetical";
+            const newOrder = currentOrder === "Official" ? "Alphabetical" : "Official";
+            toggleSortButton.textContent = `Sort: ${newOrder} Order`;
+            // Logic to update the sort order on the results page
+            console.log(`Sort order changed to: ${newOrder}`);
+        };
+    </script>
 </body>
 </html>
