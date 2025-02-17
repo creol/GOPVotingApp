@@ -27,7 +27,7 @@
         const electionRef = doc(db, "admin", "currentElection");
 
         // Fetch and display candidates
-        function fetchCandidates(disableButtons) {
+        function fetchCandidates() {
             const candidatesTable = document.getElementById("candidatesTable");
             onSnapshot(collection(db, "candidates"), (snapshot) => {
                 candidatesTable.innerHTML = "";
@@ -36,7 +36,7 @@
                     const row = document.createElement("tr");
                     row.innerHTML = `
                         <td>${candidate.name}</td>
-                        <td><button class="btn btn-danger" onclick="deleteCandidate('${doc.id}')" ${disableButtons ? 'disabled' : ''}>Delete</button></td>
+                        <td><button class="btn btn-danger" onclick="deleteCandidate('${doc.id}')">Delete</button></td>
                     `;
                     candidatesTable.appendChild(row);
                 });
@@ -73,7 +73,7 @@
                 } else {
                     document.getElementById("manageCandidatesContainer").style.display = "block";
                     document.getElementById("activeElectionMessage").style.display = "none";
-                    fetchCandidates(false);
+                    fetchCandidates();
                 }
             });
         }
@@ -146,8 +146,8 @@
         <div class="card mt-3">
             <div class="card-body">
                 <div class="table-header">Add Candidate</div>
-                <input type="text" id="candidateName" class="form-control" placeholder="Candidate Name" disabled>
-                <button class="btn btn-primary mt-2" onclick="addCandidate()" disabled>Add</button>
+                <input type="text" id="candidateName" class="form-control" placeholder="Candidate Name">
+                <button class="btn btn-primary mt-2" onclick="addCandidate()">Add</button>
             </div>
         </div>
     </div>
