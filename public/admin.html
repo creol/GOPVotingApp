@@ -38,6 +38,9 @@
     <label>Upload Voter IDs (CSV):</label>
     <input type="file" id="voterIdUpload" accept=".csv" onchange="uploadVoterIDs(event)">
 
+    <!-- ✅ Button to Manage Candidates -->
+    <button id="manageCandidatesButton" style="display: none;" onclick="window.location.href='manage-candidates.html'">Manage Candidates</button>
+
     <!-- ✅ Election Management -->
     <h2>Election Setup</h2>
     <label for="electionName">Election Name:</label>
@@ -107,9 +110,6 @@
 
     <!-- ✅ Printable Report -->
     <button onclick="downloadResultsPDF()">Download Results as PDF</button>
-
-    <!-- ✅ Button to Manage Candidates -->
-    <button id="manageCandidatesButton" style="display: none;" onclick="window.location.href='manage-candidates.html'">Manage Candidates</button>
 
     <!-- ✅ Load External Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
