@@ -76,7 +76,7 @@
                     const candidateName = resultsHidden ? "Hidden" : vote.candidate;
 
                     const voteCard = document.createElement("div");
-                    voteCard.classList.add("card", "mb-3");
+                    voteCard.classList.add("card", "mb-3", "vote-card");
                     voteCard.innerHTML = `
                         <div class="card-body">
                             <h5 class="card-title">${vote.confirmationNumber}</h5>
@@ -219,14 +219,23 @@
             width: 100%;
         }
         .vote-card {
-            background-color: #d8dee9;
-            color: #223A5E;
+            background-color: #607D8B; /* Blue-grey color */
+            color: #ffffff; /* White font color */
             padding: 12px;
             text-align: center;
             border: 2px solid #223A5E;
             border-radius: 8px;
             font-size: 14px;
             font-weight: bold;
+        }
+        .card {
+            margin-bottom: 10px;
+        }
+        .card-body {
+            padding: 10px;
+        }
+        .table {
+            font-size: 12px;
         }
         @media (max-width: 768px) {
             #statsContainer {
