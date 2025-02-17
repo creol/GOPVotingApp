@@ -4,102 +4,124 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - GOP Voting System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- ✅ Load admin.js as a module -->
     <script type="module" src="admin.js"></script> 
 </head>
 <body>
     <!-- ✅ Centered Admin Portal Title -->
-    <h1 style="text-align: center; margin-top: 20px;">GOP Voting Admin Portal</h1>
+    <h1 class="text-center my-4">GOP Voting Admin Portal</h1>
 
-    <!-- ✅ Admin Login/Logout -->
-    <h2>Admin Access</h2>
-    <p id="adminStatus">Not Logged In</p>
-    <button onclick="adminLogin()">Login with Google</button>
-    <button onclick="adminLogout()">Logout</button>
+    <div class="container">
+        <!-- ✅ Admin Login/Logout -->
+        <div class="mb-4">
+            <h2>Admin Access</h2>
+            <p id="adminStatus">Not Logged In</p>
+            <button class="btn btn-primary" onclick="adminLogin()">Login with Google</button>
+            <button class="btn btn-secondary" onclick="adminLogout()">Logout</button>
+        </div>
 
-    <!-- ✅ Election Status -->
-    <h2>Election Status</h2>
-    <div id="electionStatusContainer" style="text-align: center; margin-bottom: 20px;">
-        <img id="electionStatusIcon" src="" alt="Election Status" style="width: 100px;">
+        <!-- ✅ Election Management Section -->
+        <div class="mb-4">
+            <h2>
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#electionManagement" aria-expanded="true" aria-controls="electionManagement">
+                    Election Management
+                </button>
+            </h2>
+            <div id="electionManagement" class="collapse show">
+                <div class="card card-body">
+                    <h3>Election Setup</h3>
+                    <label for="electionName">Election Name:</label>
+                    <input type="text" id="electionName" class="form-control mb-2" placeholder="Loading...">
+                    <label for="roundNumber">Round #:</label>
+                    <input type="number" id="roundNumber" class="form-control mb-2" min="1" value="1">
+                    <button class="btn btn-success mb-2" onclick="startElection()">Start Election</button>
+                    <button class="btn btn-danger mb-2" onclick="stopActiveElection()">Stop Election</button>
+
+                    <h3>Candidate & Voter Management</h3>
+                    <label>Upload Candidates (CSV):</label>
+                    <input type="file" id="uploadCandidates" class="form-control mb-2" accept=".csv" onchange="uploadCandidates(event)">
+                    <label>Upload Voter IDs (CSV):</label>
+                    <input type="file" id="voterIdUpload" class="form-control mb-2" accept=".csv" onchange="uploadVoterIDs(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- ✅ Results and Stats Section -->
+        <div class="mb-4">
+            <h2>
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#resultsStats" aria-expanded="true" aria-controls="resultsStats">
+                    Results and Stats
+                </button>
+            </h2>
+            <div id="resultsStats" class="collapse show">
+                <div class="card card-body">
+                    <h3>Manage Results Visibility</h3>
+                    <label for="resultsVisibility">Results Visibility:</label>
+                    <select id="resultsVisibility" class="form-control mb-2" onchange="toggleResultsVisibility()">
+                        <option value="showing">Show Results</option>
+                        <option value="hidden">Hide Results</option>
+                    </select>
+
+                    <h3>Vote Stats</h3>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Total Voters</th>
+                                <th>Votes Cast</th>
+                                <th>Remaining Votes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="totalVoters">0</td>
+                                <td id="votesCast">0</td>
+                                <td id="remainingVotes">0 (0.00%)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3>Voting Results</h3>
+                    <button class="btn btn-primary mb-2" onclick="downloadResultsExcel()">Download Results as Excel</button>
+                    <button class="btn btn-secondary mb-2" id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Votes</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✅ Election History Section -->
+        <div class="mb-4">
+            <h2>Election History</h2>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Election Name</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                    </tr>
+                </thead>
+                <tbody id="electionHistory"></tbody>
+            </table>
+        </div>
+
+        <!-- ✅ Printable Report -->
+        <button class="btn btn-info mb-4" onclick="downloadResultsPDF()">Download Results as PDF</button>
     </div>
 
-    <!-- ✅ Candidate & Voter Uploads -->
-    <h2>Candidate & Voter Management</h2>
-    <label>Upload Candidates (CSV):</label>
-    <input type="file" id="uploadCandidates" accept=".csv" onchange="uploadCandidates(event)">
-    <label>Upload Voter IDs (CSV):</label>
-    <input type="file" id="voterIdUpload" accept=".csv" onchange="uploadVoterIDs(event)">
-
-    <!-- ✅ Election Management -->
-    <h2>Election Setup</h2>
-    <label for="electionName">Election Name:</label>
-    <input type="text" id="electionName" placeholder="Loading...">
-    <label>Round #:</label>
-    <input type="number" id="roundNumber" min="1" value="1">
-    
-    <button onclick="startElection()">Start Election</button>
-    <select id="resultsVisibility" onchange="toggleResultsVisibility()">
-        <option value="showing">Show Results</option>
-        <option value="hidden">Hide Results</option>
-     </select>
-    <button onclick="stopActiveElection()">Stop Election</button>
-
-    <!-- ✅ Visibility Options (Results Toggle) -->
-    <h2>Manage Results Visibility</h2>
-    <label for="electionSelect">Select Election:</label>
-    <select id="electionSelect" onchange="updateElectionID()"></select>
-
-    <!-- ✅ Vote Stats Table (Missing Section) -->
-    <h2>Vote Stats</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Total Voters</th>
-                <th>Votes Cast</th>
-                <th>Remaining Votes</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td id="totalVoters">0</td>
-                <td id="votesCast">0</td>
-                <td id="remainingVotes">0 (0.00%)</td>
-            </tr>
-        </tbody>
-    </table>
-<h2>Voting Results</h2>
-<button onclick="downloadResultsExcel()">Download Results as Excel</button>
-<button id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
-
-<table border="1">
-    <thead>
-        <tr>
-            <th>Candidate</th>
-            <th>Votes</th>
-            <th>Percentage</th>
-        </tr>
-    </thead>
-    <tbody id="resultsTable"></tbody>
-</table>
-
-    <!-- ✅ Election History Table -->
-    <h2>Election History</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Election Name</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-            </tr>
-        </thead>
-        <tbody id="electionHistory"></tbody>
-    </table>
-
-    <!-- ✅ Printable Report -->
-    <button onclick="downloadResultsPDF()">Download Results as PDF</button>
-
-    <!-- ✅ Load External Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
     <script type="module">
         import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
