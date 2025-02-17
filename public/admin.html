@@ -75,20 +75,22 @@
             </tr>
         </tbody>
     </table>
-<h2>Voting Results</h2>
-<button onclick="downloadResultsExcel()">Download Results as Excel</button>
-<button id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
 
-<table class="stats-table" border="1">
-    <thead>
-        <tr>
-            <th>Candidate</th>
-            <th>Votes</th>
-            <th>Percentage</th>
-        </tr>
-    </thead>
-    <tbody id="resultsTable"></tbody>
-</table>
+    <!-- ✅ Voting Results -->
+    <h2>Voting Results</h2>
+    <button onclick="downloadResultsExcel()">Download Results as Excel</button>
+    <button id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
+
+    <table class="stats-table" border="1">
+        <thead>
+            <tr>
+                <th>Candidate</th>
+                <th>Votes</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody id="resultsTable"></tbody>
+    </table>
 
     <!-- ✅ Election History Table -->
     <h2>Election History</h2>
@@ -111,7 +113,7 @@
 </body>
     <script type="module">
         import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ✅ Firebase Configuration
         const firebaseConfig = {
@@ -181,7 +183,110 @@
                     }
                 });
             }
+
+            // ✅ Populate Election ID Dropdown
+            const electionIDSelect = document.getElementById("electionSelect");
+            if (electionIDSelect) {
+                const electionsQuery = query(collection(db, "elections"));
+                getDocs(electionsQuery).then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const option = document.createElement("option");
+                        option.value = doc.id;
+                        option.textContent = doc.data().name;
+                        electionIDSelect.appendChild(option);
+                    });
+                });
+            }
+
+            // ✅ Populate Election History
+            const electionHistory = document.getElementById("electionHistory");
+            if (electionHistory) {
+                const electionsQuery = query(collection(db, "elections"), orderBy("startTime", "desc"));
+                getDocs(electionsQuery).then((querySnapshot) => {
+                    const rows = [];
+                    querySnapshot.forEach((doc) => {
+                        const election = doc.data();
+                        const row = document.createElement("tr");
+
+                        const nameCell = document.createElement("td");
+                        nameCell.textContent = election.name;
+
+                        const startTimeCell = document.createElement("td");
+                        startTimeCell.textContent = new Date(election.startTime.seconds * 1000).toLocaleString();
+
+                        const endTimeCell = document.createElement("td");
+                        endTimeCell.textContent = election.endTime ? new Date(election.endTime.seconds * 1000).toLocaleString() : "Ongoing";
+
+                        row.appendChild(nameCell);
+                        row.appendChild(startTimeCell);
+                        row.appendChild(endTimeCell);
+
+                        // Add row to the beginning if the election is ongoing
+                        if (!election.endTime) {
+                            electionHistory.insertBefore(row, electionHistory.firstChild);
+                        } else {
+                            rows.push(row);
+                        }
+                    });
+
+                    // Append the rest of the rows
+                    rows.forEach(row => electionHistory.appendChild(row));
+                });
+            }
         });
+
+        // ✅ Update Results Page Based on Selected Election ID
+        window.updateElectionID = async function () {
+            const electionIDSelect = document.getElementById("electionSelect");
+            const selectedElectionID = electionIDSelect.value;
+
+            try {
+                // Store the selected election ID in Firestore
+                await setDoc(doc(db, "admin", "currentElection"), { 
+                    electionID: selectedElectionID,
+                    lastUpdated: new Date().toISOString()
+                });
+
+                // Verify the update
+                console.log("Verifying election ID update in Firestore...");
+                const verificationDoc = await getDoc(doc(db, "admin", "currentElection"));
+                
+                if (verificationDoc.exists()) {
+                    const verifiedData = verificationDoc.data();
+                    console.log("Verification Results:");
+                    console.log("Expected Election ID:", selectedElectionID);
+                    console.log("Stored Election ID:", verifiedData.electionID);
+                    console.log("Last Updated:", verifiedData.lastUpdated);
+                    
+                    if (verifiedData.electionID === selectedElectionID) {
+                        console.log("✅ Election ID successfully verified in Firebase!");
+                    } else {
+                        console.error("❌ Election ID verification failed - data mismatch!");
+                        alert("Warning: Election ID update showed inconsistent data.");
+                    }
+                } else {
+                    console.error("❌ Election ID verification failed - document not found!");
+                    alert("Error: Election ID update could not be verified!");
+                }
+
+                // Refresh voting results
+                await loadVotingResults();
+                
+            } catch (error) {
+                console.error("Error updating election ID in Firestore:", error);
+                alert("Failed to update election ID: " + error.message);
+            }
+        };
+
+        // ✅ Toggle Sort Order
+        window.toggleSortOrder = function () {
+            const toggleSortButton = document.getElementById("toggleSort");
+            const currentOrder = toggleSortButton.textContent.includes("Official") ? "Official" : "Alphabetical";
+            const newOrder = currentOrder === "Official" ? "Alphabetical" : "Official";
+            toggleSortButton.textContent = `Sort: ${newOrder} Order`;
+            // Logic to update the sort order on the results page
+            console.log(`Sort order changed to: ${newOrder}`);
+        };
     </script>
 
 </html>
