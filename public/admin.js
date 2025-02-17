@@ -23,14 +23,38 @@ window.startElection = async function () {
             startTime: new Date().toISOString()
         });
 
-        alert(`New Election Started: ${newElectionID}`);
+        // Verify the update
+        console.log("Verifying election update in Firebase...");
+        const verificationDoc = await getDoc(doc(db, "elections", newElectionID));
+        
+        if (verificationDoc.exists()) {
+            const verifiedData = verificationDoc.data();
+            console.log("Verification Results:");
+            console.log("Expected Election ID:", newElectionID);
+            console.log("Stored Election ID:", verifiedData.electionID);
+            console.log("Active Status:", verifiedData.active);
+            console.log("Round Number:", verifiedData.round);
+            
+            if (verifiedData.electionID === newElectionID && 
+                verifiedData.active === true && 
+                verifiedData.round === roundNumber) {
+                console.log("✅ Election successfully verified in Firebase!");
+                alert(`New Election Started and Verified: ${newElectionID}`);
+            } else {
+                console.error("❌ Election verification failed - data mismatch!");
+                alert("Warning: Election started but verification showed inconsistent data.");
+            }
+        } else {
+            console.error("❌ Election verification failed - document not found!");
+            alert("Error: Election creation could not be verified!");
+        }
+
         loadElectionHistory();
     } catch (error) {
-        console.error("Error starting election:", error);
-        alert("Failed to start election.");
+        console.error("Error starting/verifying election:", error);
+        alert("Failed to start election: " + error.message);
     }
 };
-
 // Add this near the top of your script with other initialization code
 let electionListener = null;
 
@@ -100,7 +124,6 @@ window.startElection = async function () {
 // Add this to your DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", () => {
     setupElectionListener();
-    loadElectionHistory();
     // ... other initialization code ...
 });
 // ✅ Update Election ID with Verification
@@ -554,7 +577,23 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ✅ Update Election ID with Verification
-window.updateElectionID = async function (selectedElectionID) {
+window.updateElectionID = async function () {
+    const electionSelect = document.getElementById("electionSelect");
+
+    if (!electionSelect) {
+        console.error("Error: 'electionSelect' element not found.");
+        return;
+    }
+
+    const selectedElectionID = electionSelect.value;
+
+    if (!selectedElectionID) {
+        console.warn("No election selected.");
+        return;
+    }
+
+    console.log(`Attempting to update election ID to: ${selectedElectionID}`);
+
     try {
         // Store the selected election ID in Firestore
         await setDoc(doc(db, "admin", "currentElection"), { 
@@ -750,24 +789,24 @@ window.startElection = async function () {
 };
 
 // ✅ Load Election History
-// window.loadElectionHistory = async function () {
-//     const electionTable = document.getElementById("electionHistory");
-//     electionTable.innerHTML = "";
+window.loadElectionHistory = async function () {
+    const electionTable = document.getElementById("electionHistory");
+    electionTable.innerHTML = "";
 
-//     try {
-//         const electionsSnapshot = await getDocs(collection(db, "elections"));
-//         electionsSnapshot.forEach((doc) => {
-//             const data = doc.data();
-//             electionTable.innerHTML += `<tr>
-//                 <td>${data.electionID}</td>
-//                 <td>${data.startTime || "-"}</td>
-//                 <td>${data.endTime || "Ongoing"}</td>
-//             </tr>`;
-//         });
-//     } catch (error) {
-//         console.error("Error loading election history:", error);
-//     }
-// };
+    try {
+        const electionsSnapshot = await getDocs(collection(db, "elections"));
+        electionsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            electionTable.innerHTML += `<tr>
+                <td>${data.electionID}</td>
+                <td>${data.startTime || "-"}</td>
+                <td>${data.endTime || "Ongoing"}</td>
+            </tr>`;
+        });
+    } catch (error) {
+        console.error("Error loading election history:", error);
+    }
+};
 
 // ✅ Fix Undefined Function Load Issue
 window.loadLatestElection = async function () {
@@ -839,72 +878,3 @@ setInterval(loadVotingResults, 5000);
 //loadResults();
 loadLatestElection();
 loadElectionHistory();
-
-// ✅ Load Election History with Radio Buttons and Sorting
-window.loadElectionHistory = async function () {
-    const electionTable = document.getElementById("electionHistory");
-    electionTable.innerHTML = "";
-
-    try {
-        const electionsSnapshot = await getDocs(query(collection(db, "elections"), orderBy("startTime", "desc")));
-        electionsSnapshot.forEach((doc) => {
-            const data = doc.data();
-            const row = document.createElement("tr");
-
-            const selectCell = document.createElement("td");
-            const formCheck = document.createElement("div");
-            formCheck.classList.add("form-check");
-            const radioButton = document.createElement("input");
-            radioButton.type = "radio";
-            radioButton.name = "electionSelect";
-            radioButton.value = doc.id;
-            radioButton.classList.add("form-check-input");
-            radioButton.onclick = () => updateElectionID(doc.id);
-            formCheck.appendChild(radioButton);
-            selectCell.appendChild(formCheck);
-
-            const nameCell = document.createElement("td");
-            nameCell.textContent = data.electionID;
-
-            const startTimeCell = document.createElement("td");
-            startTimeCell.textContent = new Date(data.startTime).toLocaleString();
-
-            const endTimeCell = document.createElement("td");
-            endTimeCell.textContent = data.endTime ? new Date(data.endTime).toLocaleString() : "Ongoing";
-
-            row.appendChild(selectCell);
-            row.appendChild(nameCell);
-            row.appendChild(startTimeCell);
-            row.appendChild(endTimeCell);
-
-            electionTable.appendChild(row);
-
-            // Set the default selected election to the ongoing one
-            if (!data.endTime) {
-                radioButton.checked = true;
-                updateElectionID(doc.id);
-            }
-        });
-    } catch (error) {
-        console.error("Error loading election history:", error);
-    }
-};
-
-// ✅ Update Results Page Based on Selected Election ID
-window.updateResultsPage = function (selectedElectionID) {
-    const electionIDSelect = document.getElementById("electionIDSelect");
-    if (selectedElectionID) {
-        electionIDSelect.value = selectedElectionID;
-    } else {
-        selectedElectionID = electionIDSelect.value;
-    }
-    // Logic to update the results page based on selectedElectionID
-    console.log(`Selected Election ID: ${selectedElectionID}`);
-};
-
-// Add this to your DOMContentLoaded event listener
-document.addEventListener("DOMContentLoaded", () => {
-    setupElectionListener();
-    loadElectionHistory();
-    // ... other initialization code ...
-});

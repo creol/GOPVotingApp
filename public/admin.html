@@ -4,140 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - GOP Voting System</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- ✅ Load admin.js as a module -->
     <script type="module" src="admin.js"></script> 
-    <style>
-        .visibility-icon {
-            width: 20px;
-            height: 20px;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
-    </style>
 </head>
 <body>
     <!-- ✅ Centered Admin Portal Title -->
-    <h1 class="text-center my-4">GOP Voting Admin Portal</h1>
+    <h1 style="text-align: center; margin-top: 20px;">GOP Voting Admin Portal</h1>
 
-    <div class="container">
-        <!-- ✅ Admin Login/Logout -->
-        <div class="mb-4">
-            <h2>Admin Access</h2>
-            <p id="adminStatus">Not Logged In</p>
-            <button class="btn btn-primary" onclick="adminLogin()">Login with Google</button>
-            <button class="btn btn-secondary" onclick="adminLogout()">Logout</button>
-        </div>
+    <!-- ✅ Admin Login/Logout -->
+    <h2>Admin Access</h2>
+    <p id="adminStatus">Not Logged In</p>
+    <button onclick="adminLogin()">Login with Google</button>
+    <button onclick="adminLogout()">Logout</button>
 
-        <!-- ✅ Election Management Section -->
-        <div class="mb-4">
-            <h2>
-                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#electionManagement" aria-expanded="true" aria-controls="electionManagement">
-                    Election Management
-                </button>
-            </h2>
-            <div id="electionManagement" class="collapse show">
-                <div class="card card-body">
-                    <h3>Election Setup</h3>
-                    <label for="electionName">Election Name:</label>
-                    <input type="text" id="electionName" class="form-control mb-2" placeholder="Loading...">
-                    <label for="roundNumber">Round #:</label>
-                    <input type="number" id="roundNumber" class="form-control mb-2" min="1" value="1">
-                    <button class="btn btn-success mb-2" onclick="startElection()">Start Election</button>
-                    <button class="btn btn-danger mb-2" onclick="stopActiveElection()">Stop Election</button>
-
-                    <h3>Candidate & Voter Management</h3>
-                    <label>Upload Candidates (CSV):</label>
-                    <input type="file" id="uploadCandidates" class="form-control mb-2" accept=".csv" onchange="uploadCandidates(event)">
-                    <label>Upload Voter IDs (CSV):</label>
-                    <input type="file" id="voterIdUpload" class="form-control mb-2" accept=".csv" onchange="uploadVoterIDs(event)">
-                </div>
-            </div>
-        </div>
-
-        <!-- ✅ Results and Stats Section -->
-        <div class="mb-4">
-            <h2>
-                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#resultsStats" aria-expanded="true" aria-controls="resultsStats">
-                    Results and Stats
-                </button>
-            </h2>
-            <div id="resultsStats" class="collapse show">
-                <div class="card card-body">
-                    <h3>Manage Results Visibility</h3>
-                    <label for="resultsVisibility">Results Visibility:</label>
-                    <select id="resultsVisibility" class="form-control mb-2" onchange="toggleResultsVisibility()">
-                        <option value="hidden" selected>Hidden <img src="./images/eye-slash.svg" class="visibility-icon" alt="Hidden"></option>
-                        <option value="showing">Shown <img src="./images/eye.svg" class="visibility-icon" alt="Shown"></option>
-                    </select>
-
-                    <h3>Vote Stats</h3>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Total Voters</th>
-                                <th>Votes Cast</th>
-                                <th>Remaining Votes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td id="totalVoters">0</td>
-                                <td id="votesCast">0</td>
-                                <td id="remainingVotes">0 (0.00%)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <h3>Voting Results</h3>
-                    <label for="electionIDSelect">Select Election ID:</label>
-                    <select id="electionIDSelect" class="form-control mb-2" onchange="updateResultsPage()">
-                        <!-- Options will be populated dynamically -->
-                    </select>
-                    <button class="btn btn-primary mb-2" onclick="downloadResultsExcel()">Download Results as Excel</button>
-                    <button class="btn btn-secondary mb-2" id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Candidate</th>
-                                <th>Votes</th>
-                                <th>Percentage</th>
-                            </tr>
-                        </thead>
-                        <tbody id="resultsTable"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- ✅ Election History Section -->
-        <div class="mb-4">
-            <h2>Election History</h2>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Select</th>
-                        <th>Election Name</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
-                    </tr>
-                </thead>
-                <tbody id="electionHistory"></tbody>
-            </table>
-        </div>
-
-        <!-- ✅ Printable Report -->
-        <button class="btn btn-info mb-4" onclick="downloadResultsPDF()">Download Results as PDF</button>
+    <!-- ✅ Election Status -->
+    <h2>Election Status</h2>
+    <div id="electionStatusContainer" style="text-align: center; margin-bottom: 20px;">
+        <img id="electionStatusIcon" src="" alt="Election Status" style="width: 100px;">
     </div>
 
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- ✅ Candidate & Voter Uploads -->
+    <h2>Candidate & Voter Management</h2>
+    <label>Upload Candidates (CSV):</label>
+    <input type="file" id="uploadCandidates" accept=".csv" onchange="uploadCandidates(event)">
+    <label>Upload Voter IDs (CSV):</label>
+    <input type="file" id="voterIdUpload" accept=".csv" onchange="uploadVoterIDs(event)">
+
+    <!-- ✅ Election Management -->
+    <h2>Election Setup</h2>
+    <label for="electionName">Election Name:</label>
+    <input type="text" id="electionName" placeholder="Loading...">
+    <label>Round #:</label>
+    <input type="number" id="roundNumber" min="1" value="1">
+    
+    <button onclick="startElection()">Start Election</button>
+    <select id="resultsVisibility" onchange="toggleResultsVisibility()">
+        <option value="showing">Show Results</option>
+        <option value="hidden">Hide Results</option>
+     </select>
+    <button onclick="stopActiveElection()">Stop Election</button>
+
+    <!-- ✅ Visibility Options (Results Toggle) -->
+    <h2>Manage Results Visibility</h2>
+    <label for="electionSelect">Select Election:</label>
+    <select id="electionSelect" onchange="updateElectionID()"></select>
+
+    <!-- ✅ Vote Stats Table (Missing Section) -->
+    <h2>Vote Stats</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Total Voters</th>
+                <th>Votes Cast</th>
+                <th>Remaining Votes</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td id="totalVoters">0</td>
+                <td id="votesCast">0</td>
+                <td id="remainingVotes">0 (0.00%)</td>
+            </tr>
+        </tbody>
+    </table>
+<h2>Voting Results</h2>
+<button onclick="downloadResultsExcel()">Download Results as Excel</button>
+<button id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>Candidate</th>
+            <th>Votes</th>
+            <th>Percentage</th>
+        </tr>
+    </thead>
+    <tbody id="resultsTable"></tbody>
+</table>
+
+    <!-- ✅ Election History Table -->
+    <h2>Election History</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Election Name</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+        </thead>
+        <tbody id="electionHistory"></tbody>
+    </table>
+
+    <!-- ✅ Printable Report -->
+    <button onclick="downloadResultsPDF()">Download Results as PDF</button>
+
+    <!-- ✅ Load External Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
     <script type="module">
         import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ✅ Firebase Configuration
         const firebaseConfig = {
@@ -207,89 +173,7 @@
                     }
                 });
             }
-
-            // ✅ Populate Election ID Dropdown
-            const electionIDSelect = document.getElementById("electionIDSelect");
-            if (electionIDSelect) {
-                const electionsQuery = query(collection(db, "elections"));
-                getDocs(electionsQuery).then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        const option = document.createElement("option");
-                        option.value = doc.id;
-                        option.textContent = doc.data().name;
-                        electionIDSelect.appendChild(option);
-                    });
-                });
-            }
-
-            // ✅ Populate Election History
-            const electionHistory = document.getElementById("electionHistory");
-            if (electionHistory) {
-                const electionsQuery = query(collection(db, "elections"), orderBy("startTime", "desc"));
-                getDocs(electionsQuery).then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        const election = doc.data();
-                        const row = document.createElement("tr");
-
-                        const selectCell = document.createElement("td");
-                        const formCheck = document.createElement("div");
-                        formCheck.classList.add("form-check");
-                        const radioButton = document.createElement("input");
-                        radioButton.type = "radio";
-                        radioButton.name = "electionSelect";
-                        radioButton.value = doc.id;
-                        radioButton.classList.add("form-check-input");
-                        radioButton.onclick = () => updateResultsPage(doc.id);
-                        formCheck.appendChild(radioButton);
-                        selectCell.appendChild(formCheck);
-
-                        const nameCell = document.createElement("td");
-                        nameCell.textContent = election.name;
-
-                        const startTimeCell = document.createElement("td");
-                        startTimeCell.textContent = new Date(election.startTime.seconds * 1000).toLocaleString();
-
-                        const endTimeCell = document.createElement("td");
-                        endTimeCell.textContent = election.endTime ? new Date(election.endTime.seconds * 1000).toLocaleString() : "Ongoing";
-
-                        row.appendChild(selectCell);
-                        row.appendChild(nameCell);
-                        row.appendChild(startTimeCell);
-                        row.appendChild(endTimeCell);
-
-                        electionHistory.appendChild(row);
-
-                        // Set the default selected election to the ongoing one
-                        if (!election.endTime) {
-                            radioButton.checked = true;
-                            updateResultsPage(doc.id);
-                        }
-                    });
-                });
-            }
         });
-
-        // ✅ Update Results Page Based on Selected Election ID
-        window.updateResultsPage = function (selectedElectionID) {
-            const electionIDSelect = document.getElementById("electionIDSelect");
-            if (selectedElectionID) {
-                electionIDSelect.value = selectedElectionID;
-            } else {
-                selectedElectionID = electionIDSelect.value;
-            }
-            // Logic to update the results page based on selectedElectionID
-            console.log(`Selected Election ID: ${selectedElectionID}`);
-        };
-
-        // ✅ Toggle Sort Order
-        window.toggleSortOrder = function () {
-            const toggleSortButton = document.getElementById("toggleSort");
-            const currentOrder = toggleSortButton.textContent.includes("Official") ? "Official" : "Alphabetical";
-            const newOrder = currentOrder === "Official" ? "Alphabetical" : "Official";
-            toggleSortButton.textContent = `Sort: ${newOrder} Order`;
-            // Logic to update the sort order on the results page
-            console.log(`Sort order changed to: ${newOrder}`);
-        };
     </script>
-</body>
+
 </html>
