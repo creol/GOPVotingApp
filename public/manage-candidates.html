@@ -81,6 +81,10 @@
         document.addEventListener("DOMContentLoaded", () => {
             checkActiveElection();
         });
+
+        // Attach functions to the window object
+        window.addCandidate = addCandidate;
+        window.deleteCandidate = deleteCandidate;
     </script>
     <style>
         body {
