@@ -108,6 +108,9 @@
     <!-- ✅ Printable Report -->
     <button onclick="downloadResultsPDF()">Download Results as PDF</button>
 
+    <!-- ✅ Button to Manage Candidates -->
+    <button id="manageCandidatesButton" style="display: none;" onclick="window.location.href='manage-candidates.html'">Manage Candidates</button>
+
     <!-- ✅ Load External Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
@@ -130,6 +133,7 @@
         const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const resultsToggleRef = doc(db, "settings", "resultsHidden");
+        const electionRef = doc(db, "admin", "currentElection");
 
         // ✅ Toggle Results Visibility
         window.toggleResultsVisibility = async function () {
@@ -233,6 +237,9 @@
                     rows.forEach(row => electionHistory.appendChild(row));
                 });
             }
+
+            // ✅ Check for active election and show/hide manage candidates button
+            checkActiveElection();
         });
 
         // ✅ Update Results Page Based on Selected Election ID
@@ -287,6 +294,18 @@
             // Logic to update the sort order on the results page
             console.log(`Sort order changed to: ${newOrder}`);
         };
+
+        // ✅ Check for active election
+        async function checkActiveElection() {
+            const manageCandidatesButton = document.getElementById("manageCandidatesButton");
+            onSnapshot(electionRef, (docSnapshot) => {
+                if (docSnapshot.exists() && docSnapshot.data().active) {
+                    manageCandidatesButton.style.display = "none";
+                } else {
+                    manageCandidatesButton.style.display = "block";
+                }
+            });
+        }
     </script>
 
 </html>
