@@ -150,176 +150,164 @@
                             candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
                         });
 
-                        const sortedCandidates = Object.entries(candidateCounts)
-                            .map(([candidate, count]) => {
-                                const percentage = ((count / votes.length) * 100).toFixed(2);ngth) * 100).toFixed(2);
-                                return { candidate, count, percentage };
-                            })
-                            .sort((a, b) => b.percentage - a.percentage);entage);
-
-                        sortedCandidates.forEach(({ candidate, count, percentage }) => {     sortedCandidates.forEach(({ candidate, count, percentage }) => {
-                            const row = document.createElement("tr");             const row = document.createElement("tr");
-                            row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" :                    row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
-                                `<td>${count}</td><td>${percentage}%</td>`}`;                                `<td>${count}</td><td>${percentage}%</td>`}`;
-                            candidateStatsTable.appendChild(row);ow);
-                        });
+                        for (const [candidate, count] of Object.entries(candidateCounts)) {
+                            const percentage = ((count / votes.length) * 100).toFixed(2);
+                            const row = document.createElement("tr");
+                            row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
+                                `<td>${count}</td><td>${percentage}%</td>`}`;
+                            candidateStatsTable.appendChild(row);
+                        }
                 });
-            }); });
+            });
         }
 
-        document.addEventListener("DOMContentLoaded", () => {nt.addEventListener("DOMContentLoaded", () => {
-            console.log("Page loaded. Listening for election updates.");ning for election updates.");
-            listenForElectionIDChanges();lectionIDChanges();
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Page loaded. Listening for election updates.");
+            listenForElectionIDChanges();
         });
     </script>
     <style>
         body {
-            font-family: Arial, sans-serif;ial, sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
             display: flex;
-            flex-direction: column;   flex-direction: column;
-            align-items: center;align-items: center;
-            background-color: #223A5E;: #223A5E;
+            flex-direction: column;
+            align-items: center;
+            background-color: #223A5E;
             color: #ffffff;
             padding: 10px;
             overflow-x: hidden;
         }
         h1 {
-            font-size: 22px;x;
+            font-size: 22px;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 15px;m: 15px;
+            margin-bottom: 15px;
         }
-        #header {header {
-            display: flex;flex;
-            align-items: center;center;
-            justify-content: flex-start;ex-start;
-            width: 100%;   width: 100%;
-            margin-bottom: 10px; /* Reduced margin */ Reduced margin */
+        #header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            margin-bottom: 10px; /* Reduced margin */
         }
         #header img {
             height: 80px;
             margin-right: 15px;
         }
-        #resultsVisibilityMessage {yMessage {
-            font-size: 18px;x;
+        #resultsVisibilityMessage {
+            font-size: 18px;
             font-weight: bold;
-            color: #ffcc00;00;
+            color: #ffcc00;
             margin-bottom: 15px;
         }
         #statsContainer {
-            display: flex; flex;
+            display: flex;
             justify-content: space-between;
-            width: 100%;   width: 100%;
-            margin-bottom: 10px; /* Reduced margin */10px; /* Reduced margin */
+            width: 100%;
+            margin-bottom: 10px; /* Reduced margin */
         }
         #statsContainer > div {
             flex: 1;
-            margin: 0 5px; /* Reduced margin */ /* Reduced margin */
+            margin: 0 5px; /* Reduced margin */
         }
-        #resultsContainer {resultsContainer {
-            display: grid; grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));50px, 1fr));
+        #resultsContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 8px;
             padding: 10px;
             width: 100%;
         }
         .vote-card {
-            background-color: #607D8B; /* Blue-grey color */: #607D8B; /* Blue-grey color */
-            color: #ffffff; /* White font color */ White font color */
-            padding: 12px;   padding: 12px;
-            text-align: center;t-align: center;
-            border: 2px solid #223A5E;23A5E;
-            border-radius: 8px;   border-radius: 8px;
-            font-size: 14px;e: 14px;
+            background-color: #607D8B; /* Blue-grey color */
+            color: #ffffff; /* White font color */
+            padding: 12px;
+            text-align: center;
+            border: 2px solid #223A5E;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: bold;
         }
         .card {
             margin-bottom: 10px;
         }
-        .card-body {card-body {
-            padding: 1px; /* Reduced padding */x; /* Reduced padding */
+        .card-body {
+            padding: 1px; /* Reduced padding */
         }
         .table {
-            font-size: 20px; /* Increased font size */* Increased font size */
-            padding: 1px; /* Reduced padding */adding */
+            font-size: 20px; /* Increased font size */
+            padding: 1px; /* Reduced padding */
         }
-        .table-header {table-header {
-            text-align: center;;
-            font-size: 18px; /* Increased font size */size */
-            font-weight: bold;   font-weight: bold;
-            background-color: #223A5E;5E;
+        .table-header {
+            text-align: center;
+            font-size: 18px; /* Increased font size */
+            font-weight: bold;
+            background-color: #223A5E;
             color: #ffffff;
         }
         .table th, .table td {
-            padding: 2px; /* Reduced padding */adding: 2px; /* Reduced padding */
+            padding: 2px; /* Reduced padding */
         }
-        @media (max-width: 768px) {x) {
-            #statsContainer {statsContainer {
-                flex-direction: column;       flex-direction: column;
-                align-items: center;    align-items: center;
-            }     }
-            #statsContainer > div {      #statsContainer > div {
-                margin: 10px 0;n: 10px 0;
+        @media (max-width: 768px) {
+            #statsContainer {
+                flex-direction: column;
+                align-items: center;
+            }
+            #statsContainer > div {
+                margin: 10px 0;
             }
         }
-    </style>e>
+    </style>
 </head>
 <body>
     <div id="header">
         <img src="./images/elephant.jpg" alt="GOP Logo">
         <h1 id="electionIDHeader">N/A</h1>
     </div>
-    <div id="statsContainer">>
+    <div id="statsContainer">
         <div class="card">
             <div class="card-body">
-                <div class="table-header">Vote Stats</div></div>
-                <table class="table table-bordered">"table table-bordered">
+                <div class="table-header">Vote Stats</div>
+                <table class="table table-bordered">
                     <thead>
-                        <tr>>
-                            <th>Total Voters</th><th>Total Voters</th>
+                        <tr>
+                            <th>Total Voters</th>
                             <th>Votes Cast</th>
                             <th>Remaining Votes</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><tr>
-                            <td id="totalVoters">0</td>          <td id="totalVoters">0</td>
-                            <td id="votesCast">0</td>              <td id="votesCast">0</td>
-                            <td id="remainingVotes">0 (0.00%)</td>  <td id="remainingVotes">0 (0.00%)</td>
+                        <tr>
+                            <td id="totalVoters">0</td>
+                            <td id="votesCast">0</td>
+                            <td id="remainingVotes">0 (0.00%)</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
         <div class="card">
-            <div class="card-body">y">
-                <div class="table-header">Candidate Stats</div>e Stats</div>
-                <div id="resultsVisibilityMessage"></div>age"></div>
+            <div class="card-body">
+                <div class="table-header">Candidate Stats</div>
+                <div id="resultsVisibilityMessage"></div>
                 <div id="candidateStatsContainer">
-                    <table class="table table-bordered">"table table-bordered">
+                    <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>Candidate</th>    <th>Candidate</th>
-                                <th>Votes</th>          <th>Votes</th>
-                                <th>Percentage</th>              <th>Percentage</th>
-                            </tr>              </tr>
-                        </thead>              </thead>
-                        <tbody id="candidateStatsTable"></tbody>ody id="candidateStatsTable"></tbody>
+                                <th>Candidate</th>
+                                <th>Votes</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidateStatsTable"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
-    <h3>Realtime Votes</h3>>Realtime Votes</h3>
-    <div id="resultsContainer"></div>v id="resultsContainer"></div>
-
-
-
-
-
-
-</html></body>    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>    <!-- Bootstrap JS and dependencies -->    <!-- Bootstrap JS and dependencies -->
+    <h3>Realtime Votes</h3>
+    <div id="resultsContainer"></div>
+    <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
