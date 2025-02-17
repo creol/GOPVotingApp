@@ -33,7 +33,7 @@
                 if (docSnapshot.exists()) {
                     selectedElectionID = docSnapshot.data().electionID;
                     console.log(`Election ID: ${selectedElectionID}`);
-                    document.getElementById("electionIDHeader").textContent = `${selectedElectionID}`;
+                    document.getElementById("electionIDHeader").textContent = `Election ID: ${selectedElectionID}`;
 
                     listenForLiveVotingResults(selectedElectionID);
                     fetchCandidateStats(selectedElectionID);
@@ -204,7 +204,8 @@
 </head>
 <body>
     <h1 id="electionIDHeader">Election ID: N/A</h1>
-    <h3>Vote Statistics</h3>
+
+    <h2>Vote Statistics</h2>
     <table border="1">
         <thead>
             <tr>
@@ -221,12 +222,14 @@
             </tr>
         </tbody>
     </table>
+
+    <h2>Candidate Stats</h2>
     <div id="resultsVisibilityMessage"></div>
     <div id="candidateStatsContainer">
         <table border="1">
             <thead>
                 <tr>
-              ,      <th>Candidate</th>
+                    <th>Candidate</th>
                     <th>Votes</th>
                     <th>Percentage</th>
                 </tr>
@@ -234,6 +237,8 @@
             <tbody id="candidateStatsTable"></tbody>
         </table>
     </div>
+
+    <h2>Voting Results</h2>
     <div id="resultsContainer"></div>
 </body>
 </html>
