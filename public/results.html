@@ -123,43 +123,50 @@
             });
         }
 
-        // Fix for fetchCandidateStats
-        function fetchCandidateStats(electionID) {
-            const candidateStatsTable = document.getElementById("candidateStatsTable");
-            if (!candidateStatsTable) return;
+        // Fix for fetchCandidateStats with sort
+function fetchCandidateStats(electionID) {
+    const candidateStatsTable = document.getElementById("candidateStatsTable");
+    if (!candidateStatsTable) return;
 
-            onSnapshot(resultsToggleRef, (toggleDoc) => {
-                const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden === "hidden" : false;
-                document.getElementById("candidateStatsContainer").style.display = 
-                    resultsHidden ? "none" : "block";
+    onSnapshot(resultsToggleRef, (toggleDoc) => {
+        const resultsHidden = toggleDoc.exists() ? toggleDoc.data().hidden === "hidden" : false;
+        document.getElementById("candidateStatsContainer").style.display = 
+            resultsHidden ? "none" : "block";
 
-                onSnapshot(query(collection(db, "votes"), 
-                    where("electionID", "==", electionID)), 
-                    (votesSnapshot) => {
-                        candidateStatsTable.innerHTML = "";
+        onSnapshot(query(collection(db, "votes"), 
+            where("electionID", "==", electionID)), 
+            (votesSnapshot) => {
+                candidateStatsTable.innerHTML = "";
 
-                        if (votesSnapshot.empty) {
-                            candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
-                            return;
-                        }
+                if (votesSnapshot.empty) {
+                    candidateStatsTable.innerHTML = "<tr><td colspan='3'>No votes yet</td></tr>";
+                    return;
+                }
 
-                        const votes = votesSnapshot.docs.map(doc => doc.data());
-                        const candidateCounts = {};
+                const votes = votesSnapshot.docs.map(doc => doc.data());
+                const candidateCounts = {};
 
-                        votes.forEach((vote) => {
-                            candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
-                        });
-
-                        for (const [candidate, count] of Object.entries(candidateCounts)) {
-                            const percentage = ((count / votes.length) * 100).toFixed(2);
-                            const row = document.createElement("tr");
-                            row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
-                                `<td>${count}</td><td>${percentage}%</td>`}`;
-                            candidateStatsTable.appendChild(row);
-                        }
+                votes.forEach((vote) => {
+                    candidateCounts[vote.candidate] = (candidateCounts[vote.candidate] || 0) + 1;
                 });
-            });
-        }
+
+                const sortedCandidates = Object.entries(candidateCounts)
+                    .map(([candidate, count]) => {
+                        const percentage = ((count / votes.length) * 100).toFixed(2);
+                        return { candidate, count, percentage };
+                    })
+                    .sort((a, b) => b.percentage - a.percentage);
+
+                sortedCandidates.forEach(({ candidate, count, percentage }) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td>${candidate}</td>${resultsHidden ? "" : 
+                        `<td>${count}</td><td>${percentage}%</td>`}`;
+                    candidateStatsTable.appendChild(row);
+                });
+        });
+    });
+}
+
 
         document.addEventListener("DOMContentLoaded", () => {
             console.log("Page loaded. Listening for election updates.");
