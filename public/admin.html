@@ -117,6 +117,7 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>Select</th>
                         <th>Election Name</th>
                         <th>Start Time</th>
                         <th>End Time</th>
@@ -136,7 +137,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script type="module">
         import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ✅ Firebase Configuration
         const firebaseConfig = {
@@ -220,12 +221,58 @@
                     });
                 });
             }
+
+            // ✅ Populate Election History
+            const electionHistory = document.getElementById("electionHistory");
+            if (electionHistory) {
+                const electionsQuery = query(collection(db, "elections"), orderBy("startTime", "desc"));
+                getDocs(electionsQuery).then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        const election = doc.data();
+                        const row = document.createElement("tr");
+
+                        const selectCell = document.createElement("td");
+                        const radioButton = document.createElement("input");
+                        radioButton.type = "radio";
+                        radioButton.name = "electionSelect";
+                        radioButton.value = doc.id;
+                        radioButton.onclick = () => updateResultsPage(doc.id);
+                        selectCell.appendChild(radioButton);
+
+                        const nameCell = document.createElement("td");
+                        nameCell.textContent = election.name;
+
+                        const startTimeCell = document.createElement("td");
+                        startTimeCell.textContent = new Date(election.startTime.seconds * 1000).toLocaleString();
+
+                        const endTimeCell = document.createElement("td");
+                        endTimeCell.textContent = election.endTime ? new Date(election.endTime.seconds * 1000).toLocaleString() : "Ongoing";
+
+                        row.appendChild(selectCell);
+                        row.appendChild(nameCell);
+                        row.appendChild(startTimeCell);
+                        row.appendChild(endTimeCell);
+
+                        electionHistory.appendChild(row);
+
+                        // Set the default selected election to the ongoing one
+                        if (!election.endTime) {
+                            radioButton.checked = true;
+                            updateResultsPage(doc.id);
+                        }
+                    });
+                });
+            }
         });
 
         // ✅ Update Results Page Based on Selected Election ID
-        window.updateResultsPage = function () {
+        window.updateResultsPage = function (selectedElectionID) {
             const electionIDSelect = document.getElementById("electionIDSelect");
-            const selectedElectionID = electionIDSelect.value;
+            if (selectedElectionID) {
+                electionIDSelect.value = selectedElectionID;
+            } else {
+                selectedElectionID = electionIDSelect.value;
+            }
             // Logic to update the results page based on selectedElectionID
             console.log(`Selected Election ID: ${selectedElectionID}`);
         };
