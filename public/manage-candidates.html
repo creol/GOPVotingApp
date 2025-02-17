@@ -54,8 +54,14 @@
 
         // Delete a candidate
         async function deleteCandidate(candidateId) {
-            await deleteDoc(doc(db, "candidates", candidateId));
-            location.reload();
+            console.log(`Attempting to delete candidate with ID: ${candidateId}`);
+            try {
+                await deleteDoc(doc(db, "candidates", candidateId));
+                console.log(`Successfully deleted candidate with ID: ${candidateId}`);
+                location.reload();
+            } catch (error) {
+                console.error(`Error deleting candidate with ID: ${candidateId}`, error);
+            }
         }
 
         // Check for active election
