@@ -554,23 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ✅ Update Election ID with Verification
-window.updateElectionID = async function () {
-    const electionSelect = document.getElementById("electionSelect");
-
-    if (!electionSelect) {
-        console.error("Error: 'electionSelect' element not found.");
-        return;
-    }
-
-    const selectedElectionID = electionSelect.value;
-
-    if (!selectedElectionID) {
-        console.warn("No election selected.");
-        return;
-    }
-
-    console.log(`Attempting to update election ID to: ${selectedElectionID}`);
-
+window.updateElectionID = async function (selectedElectionID) {
     try {
         // Store the selected election ID in Firestore
         await setDoc(doc(db, "admin", "currentElection"), { 
@@ -875,7 +859,7 @@ window.loadElectionHistory = async function () {
             radioButton.name = "electionSelect";
             radioButton.value = doc.id;
             radioButton.classList.add("form-check-input");
-            radioButton.onclick = () => updateResultsPage(doc.id);
+            radioButton.onclick = () => updateElectionID(doc.id);
             formCheck.appendChild(radioButton);
             selectCell.appendChild(formCheck);
 
@@ -898,7 +882,7 @@ window.loadElectionHistory = async function () {
             // Set the default selected election to the ongoing one
             if (!data.endTime) {
                 radioButton.checked = true;
-                updateResultsPage(doc.id);
+                updateElectionID(doc.id);
             }
         });
     } catch (error) {
