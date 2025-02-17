@@ -6,6 +6,14 @@
     <title>Admin Portal - GOP Voting System</title>
     <!-- ✅ Load admin.js as a module -->
     <script type="module" src="admin.js"></script> 
+    <style>
+        .stats-table th, .stats-table td {
+            font-size: 16px; /* Increased font size */
+        }
+        .stats-table {
+            margin: 10px 0; /* Reduced margin */
+        }
+    </style>
 </head>
 <body>
     <!-- ✅ Centered Admin Portal Title -->
@@ -49,9 +57,9 @@
     <label for="electionSelect">Select Election:</label>
     <select id="electionSelect" onchange="updateElectionID()"></select>
 
-    <!-- ✅ Vote Stats Table (Missing Section) -->
+    <!-- ✅ Vote Stats Table -->
     <h2>Vote Stats</h2>
-    <table border="1">
+    <table class="stats-table" border="1">
         <thead>
             <tr>
                 <th>Total Voters</th>
@@ -71,7 +79,7 @@
 <button onclick="downloadResultsExcel()">Download Results as Excel</button>
 <button id="toggleSort" onclick="toggleSortOrder()">Sort: Official Order</button>
 
-<table border="1">
+<table class="stats-table" border="1">
     <thead>
         <tr>
             <th>Candidate</th>
@@ -84,7 +92,7 @@
 
     <!-- ✅ Election History Table -->
     <h2>Election History</h2>
-    <table border="1">
+    <table class="stats-table" border="1">
         <thead>
             <tr>
                 <th>Election Name</th>
