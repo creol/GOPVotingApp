@@ -24,6 +24,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const electionRef = doc(db, "admin", "currentElection");
 
         // Fetch and display candidates
         function fetchCandidates() {
@@ -56,8 +57,22 @@
             await deleteDoc(doc(db, "candidates", candidateId));
         }
 
+        // Check for active election
+        function checkActiveElection() {
+            onSnapshot(electionRef, (docSnapshot) => {
+                if (docSnapshot.exists() && docSnapshot.data().active) {
+                    document.getElementById("manageCandidatesContainer").style.display = "none";
+                    document.getElementById("activeElectionMessage").style.display = "block";
+                } else {
+                    document.getElementById("manageCandidatesContainer").style.display = "block";
+                    document.getElementById("activeElectionMessage").style.display = "none";
+                    fetchCandidates();
+                }
+            });
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
-            fetchCandidates();
+            checkActiveElection();
         });
     </script>
     <style>
@@ -90,29 +105,39 @@
         .btn {
             margin: 5px;
         }
+        #activeElectionMessage {
+            display: none;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <h1>Manage Candidates</h1>
-    <div class="card">
-        <div class="card-body">
-            <div class="table-header">Candidates</div>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="candidatesTable"></tbody>
-            </table>
+    <div id="activeElectionMessage">No changes allowed while there is an active election.</div>
+    <div id="manageCandidatesContainer">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-header">Candidates</div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidatesTable"></tbody>
+                </table>
+            </div>
         </div>
-    </div>
-    <div class="card mt-3">
-        <div class="card-body">
-            <div class="table-header">Add Candidate</div>
-            <input type="text" id="candidateName" class="form-control" placeholder="Candidate Name">
-            <button class="btn btn-primary mt-2" onclick="addCandidate()">Add</button>
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="table-header">Add Candidate</div>
+                <input type="text" id="candidateName" class="form-control" placeholder="Candidate Name">
+                <button class="btn btn-primary mt-2" onclick="addCandidate()">Add</button>
+            </div>
         </div>
     </div>
     <!-- Bootstrap JS and dependencies -->
