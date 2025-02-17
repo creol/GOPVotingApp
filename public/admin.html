@@ -39,8 +39,8 @@
     
     <button onclick="startElection()">Start Election</button>
     <select id="resultsVisibility" onchange="toggleResultsVisibility()">
-        <option value="show">Show Results</option>
-        <option value="hide">Hide Results</option>
+        <option value="showing">Show Results</option>
+        <option value="hidden">Hide Results</option>
      </select>
     <button onclick="stopActiveElection()">Stop Election</button>
 
@@ -122,57 +122,54 @@
         const resultsToggleRef = doc(db, "settings", "resultsHidden");
 
         // ✅ Toggle Results Visibility
-window.toggleResultsVisibility = async function () {
-    const resultsVisibilityElement = document.getElementById("resultsVisibility");
-    
-    if (!resultsVisibilityElement) {
-        console.error("Error: 'resultsVisibility' select element not found.");
-        return;
-    }
+        window.toggleResultsVisibility = async function () {
+            const resultsVisibilityElement = document.getElementById("resultsVisibility");
+            
+            if (!resultsVisibilityElement) {
+                console.error("Error: 'resultsVisibility' select element not found.");
+                return;
+            }
 
-    const visibility = resultsVisibilityElement.value === "show";
+            const visibility = resultsVisibilityElement.value;
 
-    try {
-        await setDoc(doc(db, "admin", "resultsVisibility"), { visible: visibility });
+            try {
+                await setDoc(resultsToggleRef, { hidden: visibility });
 
-        alert(`Results visibility set to: ${visibility ? "Show" : "Hide"}`);
-    } catch (error) {
-        console.error("Error updating results visibility:", error);
-    }
-};
+                alert(`Results visibility set to: ${visibility}`);
+            } catch (error) {
+                console.error("Error updating results visibility:", error);
+            }
+        };
 
-        // ✅ Update Button UI Safely
-function updateToggleButton(resultsHidden) {
-    const button = document.getElementById("toggleResultsButton");
-    const icon = document.getElementById("toggleIcon");
+        // ✅ Update Dropdown UI Safely
+        function updateDropdown(resultsHidden) {
+            const resultsVisibilityElement = document.getElementById("resultsVisibility");
 
-    if (!button || !icon) {
-        console.warn("Toggle button or icon is missing.");
-        return;
-    }
+            if (!resultsVisibilityElement) {
+                console.warn("Results visibility dropdown is missing.");
+                return;
+            }
 
-    // Update button text and styles based on visibility
-    button.innerHTML = `<span id="toggleIcon">${resultsHidden ? "👀" : "👁️‍🗨️"}</span> ${resultsHidden ? "Show Results" : "Hide Results"}`;
-    button.style.backgroundColor = resultsHidden ? "green" : "red";
-}
-
+            // Update dropdown value based on visibility
+            resultsVisibilityElement.value = resultsHidden;
+        }
 
         // ✅ Load the Initial Toggle State *After* DOM is Ready
         document.addEventListener("DOMContentLoaded", () => {
             console.log("DOM fully loaded, initializing Firebase listeners.");
 
-            // ✅ Ensure Toggle Button Exists Before Running
-            if (document.getElementById("toggleResultsButton")) {
+            // ✅ Ensure Dropdown Exists Before Running
+            if (document.getElementById("resultsVisibility")) {
                 getDoc(resultsToggleRef).then((toggleDoc) => {
                     if (toggleDoc.exists()) {
-                        updateToggleButton(toggleDoc.data().hidden);
+                        updateDropdown(toggleDoc.data().hidden);
                     }
                 });
 
                 // ✅ Listen for Firestore Changes
                 onSnapshot(resultsToggleRef, (docSnapshot) => {
                     if (docSnapshot.exists()) {
-                        updateToggleButton(docSnapshot.data().hidden);
+                        updateDropdown(docSnapshot.data().hidden);
                     }
                 });
             }
