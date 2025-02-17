@@ -232,12 +232,16 @@
                         const row = document.createElement("tr");
 
                         const selectCell = document.createElement("td");
+                        const formCheck = document.createElement("div");
+                        formCheck.classList.add("form-check");
                         const radioButton = document.createElement("input");
                         radioButton.type = "radio";
                         radioButton.name = "electionSelect";
                         radioButton.value = doc.id;
+                        radioButton.classList.add("form-check-input");
                         radioButton.onclick = () => updateResultsPage(doc.id);
-                        selectCell.appendChild(radioButton);
+                        formCheck.appendChild(radioButton);
+                        selectCell.appendChild(formCheck);
 
                         const nameCell = document.createElement("td");
                         nameCell.textContent = election.name;
