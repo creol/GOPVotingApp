@@ -21,12 +21,14 @@
             color: white;
             text-decoration: none;
             padding: 14px 20px;
+            cursor: pointer;
         }
         .card {
             border: 1px solid #ccc;
             border-radius: 8px;
             padding: 20px;
             margin: 20px 0;
+            display: none; /* Hide all sections by default */
         }
         .card h2 {
             margin-top: 0;
@@ -47,13 +49,13 @@
 </head>
 <body>
     <div class="navbar">
-        <a href="#adminAccess">Admin Access</a>
-        <a href="#electionStatus">Election Status</a>
-        <a href="#candidateManagement">Candidate & Voter Management</a>
-        <a href="#electionSetup">Election Setup</a>
-        <a href="#voteStats">Vote Stats</a>
-        <a href="#votingResults">Voting Results</a>
-        <a href="#electionHistory">Election History</a>
+        <a id="linkAdminAccess" onclick="showSection('adminAccess')">Admin Access</a>
+        <a id="linkElectionStatus" onclick="showSection('electionStatus')">Election Status</a>
+        <a id="linkCandidateManagement" onclick="showSection('candidateManagement')">Candidate & Voter Management</a>
+        <a id="linkElectionSetup" onclick="showSection('electionSetup')">Election Setup</a>
+        <a id="linkVoteStats" onclick="showSection('voteStats')">Vote Stats</a>
+        <a id="linkVotingResults" onclick="showSection('votingResults')">Voting Results</a>
+        <a id="linkElectionHistory" onclick="showSection('electionHistory')">Election History</a>
     </div>
 
     <div class="card" id="adminAccess">
@@ -150,5 +152,23 @@
     <button onclick="downloadResultsPDF()">Download Results as PDF</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.card');
+            sections.forEach(section => section.style.display = 'none');
+
+            // Show the selected section
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) {
+                selectedSection.style.display = 'block';
+            }
+        }
+
+        // Show the first section by default
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('adminAccess');
+        });
+    </script>
 </body>
 </html>
